@@ -145,12 +145,19 @@ class Agent:
         states, actions, rewards, next_states = zip(*batch)
 
         states = torch.cat(states)
-        actions = torch.cat(actions)
+        #actions = torch.cat(actions)
         rewards = torch.cat(rewards)
         next_states = torch.cat(next_states)
 
-        current_q = self.dqn(states)
-        max_next_q = self.dqn(next_states).detach().max(1)[0]
+
+        next_q_values = self.dqn(next_states).detach().numpy()
+        #print("next_q_values", next_q_values)
+        actions = np.argmax(next_q_values, 1)
+        #print("actions", actions)
+        max_next_q = next_q_values[[range(0,self.batch_size)], [actions]]
+        #print("max_next_q", max_next_q)
+        current_q = self.dqn(states)[[range(0,self.batch_size)], [actions]]
+
         expected_q = rewards + (self.gamma * max_next_q)
 
         """print(current_q)
@@ -158,7 +165,7 @@ class Agent:
         print("current s:", current_q.squeeze().shape)
         print("expected:", expected_q.shape)"""
 
-        loss = F.mse_loss(current_q.squeeze(), expected_q)
+        loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
