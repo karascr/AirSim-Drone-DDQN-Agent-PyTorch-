@@ -103,7 +103,9 @@ class DroneEnv(object):
             diff = dist - self.last_dist
             print("dist: ", dist, " last_dist: ", self.last_dist, "diff", diff)
 
-            if diff < -1:
+            if diff == 0.0:
+                reward = -100
+            elif diff < -1:
                 reward = 2
             elif dist < 10:
                 reward = 500
