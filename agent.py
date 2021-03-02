@@ -23,18 +23,6 @@ from env import DroneEnv
 
 env = DroneEnv()
 
-params = {
-        "max_episodes": 10000,
-        "save_interval": 50,
-        "eps_start":0.9,
-        "eps_end":0.05,
-        "eps_decay":200,
-        "gamma":0.8,
-        "learning_rate":0.001,
-        "batch_size":1
-        }
-
-
 class DQN(nn.Module):
     def __init__(self, in_channels=1, num_actions=7):
         super(DQN, self).__init__()
@@ -55,30 +43,29 @@ class DQN(nn.Module):
 
 class Agent:
     def __init__(self):
-        self.eps_start = params["eps_start"]
-        self.eps_end = params["eps_end"]
-        self.eps_decay = params["eps_decay"]
-        self.gamma = params["gamma"]
-        self.learning_rate = params["learning_rate"]
-        self.batch_size = params["batch_size"]
-        self.max_episodes = params["max_episodes"]
-        self.save_interval = params["save_interval"]
+        self.eps_start = 0.9
+        self.eps_end = 0.05
+        self.eps_decay = 200
+        self.gamma = 0.8
+        self.learning_rate = 0.001
+        self.batch_size = 1
+        self.max_episodes = 10000
+        self.save_interval = 50
 
         self.dqn = DQN()
 
         cwd = os.getcwd()
-        model_dir = os.path.join(cwd, "saved models")
+        self.model_dir = os.path.join(cwd, "saved models")
 
-        if not os.path.exists(model_dir):
+        if not os.path.exists(self.model_dir):
             os.mkdir("saved models")
 
 
-        files = glob.glob(model_dir + '\\*.pth')
+        files = glob.glob(self.model_dir + '\\*.pth')
         if len(files) > 0:
             file = files[-1]
-            checkpoint = torch.load(file)
-
-            self.dqn = self.dqn.load_state_dict(checkpoint)
+            self.dqn.load_state_dict(torch.load(file))
+            self.dqn.eval()
             print("checkpoint loaded: ", file)
 
         #self.dqn = self.dqn.to(device) # to use GPU
@@ -205,7 +192,6 @@ class Agent:
                     f2.close()
                     break
 
-            if episode % params["save_interval"] == 0:  # "epoch": epoch + 1,x
-                #torch.save({'params': params}, model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(episode))
-                torch.save(self.dqn.state_dict(), model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(episode))
+            if episode % self.save_interval == 0:
+                torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(episode))
             episode += 1
