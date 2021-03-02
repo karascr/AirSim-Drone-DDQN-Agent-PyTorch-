@@ -48,7 +48,7 @@ class Agent:
         self.eps_decay = 1000000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 1
+        self.batch_size = 200
         self.max_episodes = 10000
         self.save_interval = 1000
 
@@ -140,6 +140,8 @@ class Agent:
     def learn(self):
         if len(self.memory) < self.batch_size:
             return
+
+        print("learn")
 
         batch = random.sample(self.memory, self.batch_size)
         states, actions, rewards, next_states = zip(*batch)
