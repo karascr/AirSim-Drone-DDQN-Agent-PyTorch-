@@ -122,7 +122,7 @@ class DroneEnv(object):
     def isDone(self, reward):
         """Check if episode is done"""
         done = 0
-        if reward <= -10:
+        if reward <= -10: 
             done = 1
             self.reset()
             time.sleep(1)

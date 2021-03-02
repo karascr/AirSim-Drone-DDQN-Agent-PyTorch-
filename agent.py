@@ -188,7 +188,7 @@ class Agent:
                     score_history.append(steps)
                     reward_history.append(reward)
                     f = open("log.txt", "a")
-                    f.write("episode:{0}, reward: {1}, score: {2}".format(e, reward, score))
+                    f.write("episode:{0}, reward: {1}, score: {2}\n".format(e, reward, score))
                     f.close()
                     break
 
