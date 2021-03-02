@@ -18,7 +18,7 @@ import numpy as np
 import airsim
 #import setup_path
 
-MOVEMENT_INTERVAL = 5
+MOVEMENT_INTERVAL = 1
 
 
 class DroneEnv(object):
