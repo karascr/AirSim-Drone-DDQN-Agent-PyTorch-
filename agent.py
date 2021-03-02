@@ -45,12 +45,12 @@ class Agent:
     def __init__(self):
         self.eps_start = 0.9
         self.eps_end = 0.05
-        self.eps_decay = 200
+        self.eps_decay = 1000000
         self.gamma = 0.8
         self.learning_rate = 0.001
         self.batch_size = 1
         self.max_episodes = 10000
-        self.save_interval = 50
+        self.save_interval = 1000
 
         self.dqn = DQN()
         self.episode = -1
@@ -71,6 +71,11 @@ class Agent:
             f = open("last_episode.txt", "r")
             self.episode = int(f.read())
             print("checkpoint loaded: ", file, "last episode was: ", self.episode)
+        else:
+            if os.path.exists("log.txt"):
+                open('log.txt', 'w').close()
+            if os.path.exists("last_episode.txt"):
+                open('last_episode.txt', 'w').close()
 
         #self.dqn = self.dqn.to(device) # to use GPU
 
@@ -109,11 +114,11 @@ class Agent:
         return tensor
 
     def act(self, state):
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(
+        self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(
             -1.0 * self.steps_done / self.eps_decay
         )
         self.steps_done += 1
-        if random.random() > eps_threshold:
+        if random.random() > self.eps_threshold:
             data = self.dqn(state).data
             action = np.argmax(data.squeeze().numpy())
 
@@ -162,15 +167,14 @@ class Agent:
 
         score_history = []
         reward_history = []
-        score = 0
         if self.episode == -1:
             self.episode = 1
 
         for e in range(1, self.max_episodes + 1):
             state = env.reset()
             steps = 0
+            score = 0
             while True:
-                #state = torch.FloatTensor([state])
                 state = self.transformToTensor(state)
 
                 action = self.act(state)
@@ -183,18 +187,25 @@ class Agent:
                 steps += 1
                 score += reward
                 if done:
-                    print("episode:{0}, reward: {1}, score: {2}".format(self.episode, reward, score))
-                    print("----------------------------------------------------")
-                    score_history.append(steps)
+                    print("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
+                    print("----------------------------------------------------------------------------------------")
+                    score_history.append(score)
                     reward_history.append(reward)
-                    f = open("log.txt", "a")
-                    f.write("episode:{0}, reward: {1}, score: {2}\n".format(e, reward, score))
-                    f.close()
+                    with open('log.txt', 'a') as file:
+                        file.write("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}\n".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
                     break
 
             if self.episode % self.save_interval == 0:
                 torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
-                f = open("last_episode.txt", "w")
-                f.write(str(self.episode))
-                f.close()
+                with open("last_episode.txt", "w") as file:
+                    file.write(str(self.episode))
+                with open('log.txt', 'a') as file:
+                    file.write("**********************************************************\n"
+                               "last {0} episodes: score mean: {1}, reward mean: {2}\n"
+                               "**********************************************************\n"
+                               .format(self.save_interval, round(sum(score_history[-self.save_interval:])/self.save_interval, 2), round(sum(reward_history[-self.save_interval:])/self.save_interval, 2)))
+
+                    print("score_history:", score_history)
+                    print("sum:", sum(score_history[-self.save_interval:]))
+
             self.episode += 1

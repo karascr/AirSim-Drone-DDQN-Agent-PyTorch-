@@ -26,6 +26,7 @@ class DroneEnv(object):
 
     def __init__(self):
         self.client = airsim.MultirotorClient()
+
         self.last_dist = 1000000
         collision = False
         self.quad_offset = (0, 0, 0)
@@ -33,10 +34,10 @@ class DroneEnv(object):
 
     def step(self, action):
         """Step"""
-        print("new step ------------------------------")
+        #print("new step ------------------------------")
 
         self.quad_offset = self.interpret_action(action)
-        print("quad_offset: ", self.quad_offset)
+        #print("quad_offset: ", self.quad_offset)
 
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
         self.client.moveByVelocityAsync(
@@ -67,6 +68,9 @@ class DroneEnv(object):
 
         print("takeoff")
         self.client.takeoffAsync().join()
+        quad_state = self.client.getMultirotorState().kinematics_estimated.position
+        self.client.moveToPositionAsync(quad_state.x_val, quad_state.y_val, -7, 1).join()
+        print("ready")
 
         obs = self.get_obs()
 
@@ -94,17 +98,22 @@ class DroneEnv(object):
 
         if collision:
             reward = -100
+            print("collided")
         elif quad_state.z_val < -23:
             reward = -100
+            print("too high")
         else:
             dist = self.get_distance(quad_state)
 
 
             diff = dist - self.last_dist
-            print("dist: ", dist, " last_dist: ", self.last_dist, "diff", diff)
+            #print("dist: ", dist, " last_dist: ", self.last_dist, "diff", diff)
 
-            if diff == 0.0:
+            if diff > 0:
+                reward = -2
+            elif diff == 0.0:
                 reward = -100
+                print("stucked")
             elif diff < -1:
                 reward = 2
             elif dist < 10:
@@ -122,7 +131,7 @@ class DroneEnv(object):
     def isDone(self, reward):
         """Check if episode is done"""
         done = 0
-        if reward <= -10: 
+        if reward <= -10:
             done = 1
             self.reset()
             time.sleep(1)
@@ -155,7 +164,7 @@ class DroneEnv(object):
 
     def interpret_action(self, action):
         """Interprete action"""
-        scaling_factor = 5
+        scaling_factor = 3
         if action.item() == 0:
             self.quad_offset = (0, 0, 0)
         elif action.item() == 1:
