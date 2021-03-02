@@ -50,9 +50,10 @@ class Agent:
         self.learning_rate = 0.001
         self.batch_size = 1
         self.max_episodes = 10000
-        self.save_interval = 50
+        self.save_interval = 1
 
         self.dqn = DQN()
+        self.episode = -1
 
         cwd = os.getcwd()
         self.model_dir = os.path.join(cwd, "saved models")
@@ -66,7 +67,10 @@ class Agent:
             file = files[-1]
             self.dqn.load_state_dict(torch.load(file))
             self.dqn.eval()
-            print("checkpoint loaded: ", file)
+
+            f = open("last_episode.txt", "r")
+            self.episode = int(f.read())
+            print("checkpoint loaded: ", file, "last episode was: ", self.episode)
 
         #self.dqn = self.dqn.to(device) # to use GPU
 
@@ -132,8 +136,6 @@ class Agent:
         if len(self.memory) < self.batch_size:
             return
 
-        print("learning started")
-
         batch = random.sample(self.memory, self.batch_size)
         states, actions, rewards, next_states = zip(*batch)
 
@@ -161,7 +163,8 @@ class Agent:
         score_history = []
         reward_history = []
         score = 0
-        episode = 1
+        if self.episode == -1:
+            self.episode = 1
 
         for e in range(1, self.max_episodes + 1):
             state = env.reset()
@@ -180,18 +183,18 @@ class Agent:
                 steps += 1
                 score += reward
                 if done:
-                    print("episode:{0}, reward: {1}, score: {2}".format(e, reward, score))
+                    print("episode:{0}, reward: {1}, score: {2}".format(self.episode, reward, score))
                     print("----------------------------------------------------")
                     score_history.append(steps)
                     reward_history.append(reward)
-                    f = open("reward.txt", "a")
-                    f.write(str(reward))
+                    f = open("log.txt", "a")
+                    f.write("episode:{0}, reward: {1}, score: {2}".format(e, reward, score))
                     f.close()
-                    f2 = open("score.txt", "a")
-                    f2.write(str(score))
-                    f2.close()
                     break
 
-            if episode % self.save_interval == 0:
-                torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(episode))
-            episode += 1
+            if self.episode % self.save_interval == 0:
+                torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
+                f = open("last_episode.txt", "w")
+                f.write(str(self.episode))
+                f.close()
+            self.episode += 1

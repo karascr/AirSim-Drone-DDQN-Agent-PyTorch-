@@ -18,7 +18,7 @@ import numpy as np
 import airsim
 #import setup_path
 
-MOVEMENT_INTERVAL = 1
+MOVEMENT_INTERVAL = 5
 
 
 class DroneEnv(object):
@@ -26,26 +26,14 @@ class DroneEnv(object):
 
     def __init__(self):
         self.client = airsim.MultirotorClient()
-
-        self.state = {
-            "position": self.client.getMultirotorState().kinematics_estimated.position,
-            "prev_position": self.client.getMultirotorState().kinematics_estimated.position
-        }
-
-        self.best_dist = 1000000
-
-        self.state["prev_position"] = self.state["position"]
+        self.last_dist = 1000000
         collision = False
-
         self.quad_offset = (0, 0, 0)
-
-
         self.ep = 0
 
     def step(self, action):
         """Step"""
-
-        print("doing step")
+        print("new step ------------------------------")
 
         self.quad_offset = self.interpret_action(action)
         print("quad_offset: ", self.quad_offset)
@@ -62,9 +50,6 @@ class DroneEnv(object):
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
 
-        self.state["prev_position"] = self.state["position"]
-        self.state["position"] = self.client.getMultirotorState().kinematics_estimated.position
-
         collision = self.client.simGetCollisionInfo().has_collided
 
         result = self.compute_reward(quad_state, quad_vel, collision)
@@ -74,11 +59,10 @@ class DroneEnv(object):
 
     def reset(self):
         self.client.reset()
-        self.best_dist = self.get_distance(self.state["position"])
+        self.last_dist = 1000000
         self.client.enableApiControl(True)
         self.client.armDisarm(True)
 
-        self.state["prev_position"] = self.state["position"]
         collision = False
 
         print("takeoff")
@@ -110,22 +94,23 @@ class DroneEnv(object):
 
         if collision:
             reward = -100
-        elif self.state["position"].z_val < -23:
+        elif quad_state.z_val < -23:
             reward = -100
         else:
             dist = self.get_distance(quad_state)
 
-            print("dist: ", dist, " best_dist: ", self.best_dist)
 
-            diff = dist - self.best_dist
+            diff = dist - self.last_dist
+            print("dist: ", dist, " last_dist: ", self.last_dist, "diff", diff)
 
             if diff < -1:
                 reward = 2
             elif dist < 10:
                 reward = 500
 
-            if dist < self.best_dist:
-                self.best_dist = dist
+            self.last_dist = dist
+
+
 
         print("reward: ", reward)
 
