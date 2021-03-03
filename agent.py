@@ -24,7 +24,7 @@ from env import DroneEnv
 env = DroneEnv()
 
 class DQN(nn.Module):
-    def __init__(self, in_channels=1, num_actions=7):
+    def __init__(self, in_channels=1, num_actions=4):
         super(DQN, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, 84, kernel_size=4, stride=4)
         self.conv2 = nn.Conv2d(84, 42, kernel_size=4, stride=2)
@@ -45,7 +45,7 @@ class Agent:
     def __init__(self):
         self.eps_start = 0.9
         self.eps_end = 0.05
-        self.eps_decay = 50000
+        self.eps_decay = 10000
         self.gamma = 0.8
         self.learning_rate = 0.001
         self.batch_size = 20
@@ -79,12 +79,12 @@ class Agent:
 
         #self.dqn = self.dqn.to(device) # to use GPU
 
-        """Get observation"""
+        """Get observation
         responses = env.client.simGetImages(
             [airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)]
         )
 
-        """Transform input binary array to image"""
+        Transform input binary array to image
         response = responses[0]
         img1d = np.fromstring(
             response.image_data_uint8, dtype=np.uint8
@@ -95,13 +95,13 @@ class Agent:
         image = Image.fromarray(img_rgba)
         im_final = np.array(image.resize((84, 84)).convert("L"))
 
-        """oimg = image = Image.fromarray(im_final)
-        oimg.save("a.jpg")"""
+        oimg = image = Image.fromarray(im_final)
+        oimg.save("a.jpg")
 
         #tensor = torch.from_numpy(im_final)
         tensor = self.transformToTensor(im_final)
 
-        self.model = self.dqn.forward(tensor)
+        self.model = self.dqn.forward(tensor)"""
         self.memory = deque(maxlen=10000)
         self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
         self.steps_done = 0
@@ -124,7 +124,7 @@ class Agent:
 
             return torch.LongTensor([action])
         else:
-            action = [random.randrange(0, 7)]
+            action = [random.randrange(0, 4)]
             return torch.LongTensor([action])
 
     def memorize(self, state, action, reward, next_state):

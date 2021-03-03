@@ -133,11 +133,9 @@ class DroneEnv(object):
         done = 0
         if reward <= -10:
             done = 1
-            self.reset()
             time.sleep(1)
         elif reward > 499:
             done = 1
-            self.reset()
             time.sleep(1)
         return done
 
@@ -165,7 +163,17 @@ class DroneEnv(object):
     def interpret_action(self, action):
         """Interprete action"""
         scaling_factor = 3
+
         if action.item() == 0:
+            self.quad_offset = (scaling_factor, 0, 0)
+        elif action.item() == 1:
+            self.quad_offset = (-scaling_factor, 0, 0)
+        elif action.item() == 2:
+            self.quad_offset = (0, scaling_factor, 0)
+        elif action.item() == 3:
+            self.quad_offset = (0, -scaling_factor, 0)
+
+        """if action.item() == 0:
             self.quad_offset = (0, 0, 0)
         elif action.item() == 1:
             self.quad_offset = (scaling_factor, 0, 0)
@@ -178,6 +186,6 @@ class DroneEnv(object):
         elif action.item() == 5:
             self.quad_offset = (0, -scaling_factor, 0)
         elif action.item() == 6:
-            self.quad_offset = (0, 0, -scaling_factor)
+            self.quad_offset = (0, 0, -scaling_factor)"""
 
         return self.quad_offset
