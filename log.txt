@@ -4,3 +4,4 @@ episode:3, reward: -100, mean reward: -2.7, score: -124, epsilon: 0.883585560910
 episode:4, reward: -100, mean reward: -1.29, score: -124, epsilon: 0.8756214285255168
 episode:5, reward: -100, mean reward: -3.29, score: -92, epsilon: 0.8733129219430849
 episode:6, reward: -100, mean reward: -0.54, score: -50, epsilon: 0.8657731790587214
+episode:7, reward: -100, mean reward: -2.15, score: -133, epsilon: 0.8607310321556237

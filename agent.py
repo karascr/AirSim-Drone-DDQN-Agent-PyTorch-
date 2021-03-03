@@ -250,4 +250,4 @@ class Agent:
             end = time.time()
             stopWatch = end - start
             print("Episode is done, episode time: ", stopWatch)
-            writer.close()
+        writer.close()
