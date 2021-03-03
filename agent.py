@@ -45,12 +45,12 @@ class Agent:
     def __init__(self):
         self.eps_start = 0.9
         self.eps_end = 0.05
-        self.eps_decay = 1000000
+        self.eps_decay = 50000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 200
+        self.batch_size = 20
         self.max_episodes = 10000
-        self.save_interval = 1000
+        self.save_interval = 100
 
         self.dqn = DQN()
         self.episode = -1
