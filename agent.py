@@ -62,6 +62,7 @@ class Agent:
 
         files = glob.glob(self.model_dir + '\\*.pth')
         if len(files) > 0:
+            files.sort(key=os.path.getmtime)
             file = files[-1]
             self.dqn.load_state_dict(torch.load(file))
             self.dqn.eval()
@@ -71,11 +72,10 @@ class Agent:
             print("checkpoint loaded: ", file, "last episode was: ", self.episode)
             f.close()
             log_file = glob.glob(os.getcwd() + '\\log.txt')
-            print("aaaaaaaaaa", len(log_file))
             if len(log_file) > 0:
                 f = open("log.txt", "r")
                 log = f.read()
-                index = log.find("epsilon")
+                index = log.rfind("epsilon")
                 if index != -1:
                     print("Saved eps_start is using: ", log[index + 9:index+19])
                     self.eps_start = float(log[index + 9:index+19])
@@ -238,23 +238,23 @@ class Agent:
                         memory_usage_allocated = np.float64(round(torch.cuda.memory_allocated(0) / 1024 ** 3, 1))
                         memory_usage_cached = np.float64(round(torch.cuda.memory_reserved(0) / 1024 ** 3, 1))
 
-                        writer.add_scalar("memory_usage_allocated", memory_usage_allocated, e)
-                        writer.add_scalar("memory_usage_cached", memory_usage_cached, e)
+                        writer.add_scalar("memory_usage_allocated", memory_usage_allocated, self.episode)
+                        writer.add_scalar("memory_usage_cached", memory_usage_cached, self.episode)
 
-                        writer.add_scalar('epsilon_value', self.eps_threshold, e)
-                        writer.add_scalar('score_history', score, e)
-                        writer.add_scalar('reward_history', reward, e)
+                        writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
+                        writer.add_scalar('score_history', score, self.episode)
+                        writer.add_scalar('reward_history', reward, self.episode)
                         writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
                                                             'score_history': score,
-                                                            'reward_history': reward}, e)
+                                                            'reward_history': reward}, self.episode)
 
                     else:
-                        writer.add_scalar('epsilon_value', self.eps_threshold, e)
-                        writer.add_scalar('score_history', score, e)
-                        writer.add_scalar('reward_history', reward, e)
+                        writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
+                        writer.add_scalar('score_history', score, self.episode)
+                        writer.add_scalar('reward_history', reward, self.episode)
                         writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
                                                         'score_history': score,
-                                                        'reward_history': reward}, e)
+                                                        'reward_history': reward}, self.episode)
 
                         writer.add_graph(self.dqn, self.tensor)
 
