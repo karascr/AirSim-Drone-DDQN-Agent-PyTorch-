@@ -249,6 +249,5 @@ class Agent:
             self.episode += 1
             end = time.time()
             stopWatch = end - start
-            print("Episode is done")
-            print('Total Training Time (second):', stopWatch)
+            print("Episode is done, episode time: ", stopWatch)
             writer.close()
