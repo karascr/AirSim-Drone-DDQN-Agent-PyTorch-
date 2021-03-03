@@ -47,7 +47,7 @@ class Agent:
         self.learning_rate = 0.001
         self.batch_size = 64
         self.max_episodes = 10000
-        self.save_interval = 1
+        self.save_interval = 20
         self.dqn = DQN()
         self.episode = -1
         self.useGPU = useGPU
