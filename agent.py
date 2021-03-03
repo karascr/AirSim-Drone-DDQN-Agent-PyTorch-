@@ -45,9 +45,9 @@ class Agent:
         self.eps_decay = 10000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 50
+        self.batch_size = 64
         self.max_episodes = 10000
-        self.save_interval = 100
+        self.save_interval = 50
         self.dqn = DQN()
         self.episode = -1
         self.useGPU = useGPU
