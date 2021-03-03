@@ -96,9 +96,6 @@ class Agent:
 
         """oimg = image = Image.fromarray(im_final)
         oimg.save("a.jpg")"""
-
-        #tensor = torch.from_numpy(im_final)
-        tensor = self.transformToTensor(im_final)
         self.tensor = self.transformToTensor(im_final)
 
         self.memory = deque(maxlen=10000)
@@ -207,9 +204,6 @@ class Agent:
                     reward_history.append(reward)
                     with open('log.txt', 'a') as file:
                         file.write("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}\n".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
-                    break
-
-                    print('Memory Usage:')
 
                     if self.useGPU:
                         print('Total Memory:', round(torch.cuda.get_device_properties(0).total_memory / 1024 ** 3, 1), 'GB')
@@ -224,14 +218,27 @@ class Agent:
                         writer.add_scalar("memory_usage_allocated", memory_usage_allocated, e)
                         writer.add_scalar("memory_usage_cached", memory_usage_cached, e)
 
-                    writer.add_scalar('epsilon_value', self.eps_threshold, e)
-                    writer.add_scalar('score_history', score, e)
-                    writer.add_scalar('reward_history', reward, e)
-                    writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
+                        writer.add_scalar('epsilon_value', self.eps_threshold, e)
+                        writer.add_scalar('score_history', score, e)
+                        writer.add_scalar('reward_history', reward, e)
+                        writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
+                                                            'score_history': score,
+                                                            'reward_history': reward}, e)
+
+                        writer.add_graph(self.dqn, self.tensor)
+
+                    else:
+                        writer.add_scalar('epsilon_value', self.eps_threshold, e)
+                        writer.add_scalar('score_history', score, e)
+                        writer.add_scalar('reward_history', reward, e)
+                        writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
                                                         'score_history': score,
                                                         'reward_history': reward}, e)
 
-                    writer.add_graph(self.dqn, self.tensor)
+                        writer.add_graph(self.dqn, self.tensor)
+
+                    break
+
 
             if self.episode % self.save_interval == 0:
                 torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
