@@ -47,7 +47,7 @@ class Agent:
         self.learning_rate = 0.001
         self.batch_size = 64
         self.max_episodes = 10000
-        self.save_interval = 25
+        self.save_interval = 1
         self.dqn = DQN()
         self.episode = -1
         self.useGPU = useGPU
@@ -70,11 +70,17 @@ class Agent:
             self.episode = int(f.read())
             print("checkpoint loaded: ", file, "last episode was: ", self.episode)
             f.close()
-            f = open("log.txt", "r")
-            txt = f.read()
-            for i in range(len(txt)):
-                if i == ' ':
-                    self.eps_start = int(txt)
+            log_file = glob.glob(os.getcwd() + '\\log.txt')
+            print("aaaaaaaaaa", len(log_file))
+            if len(log_file) > 0:
+                f = open("log.txt", "r")
+                log = f.read()
+                index = log.find("epsilon")
+                if index != -1:
+                    print("Saved eps_start is using: ", log[index + 9:index+19])
+                    self.eps_start = float(log[index + 9:index+19])
+                f.close()
+
 
         else:
             if os.path.exists("log.txt"):
@@ -103,7 +109,8 @@ class Agent:
 
         """oimg = image = Image.fromarray(im_final)
         oimg.save("a.jpg")"""
-        self.tensor = self.transformToTensor(im_final)
+        tensor = self.transformToTensor(im_final)
+        writer.add_graph(self.dqn, tensor)
 
         self.memory = deque(maxlen=10000)
         self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
@@ -240,8 +247,6 @@ class Agent:
                         writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
                                                             'score_history': score,
                                                             'reward_history': reward}, e)
-
-                        writer.add_graph(self.dqn, self.tensor)
 
                     else:
                         writer.add_scalar('epsilon_value', self.eps_threshold, e)
