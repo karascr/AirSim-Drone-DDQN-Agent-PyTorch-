@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-"""Environment for Microsoft AirSim Unity Quadrotor
-
-- Author: Subin Yang
-- Contact: subinlab.yang@gmail.com
-"""
 import math
 import random
 from collections import deque
@@ -16,12 +10,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 from PIL import Image
 from setuptools import glob
-
 from env import DroneEnv
+from torch.utils.tensorboard import SummaryWriter
+import time
 
-#device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-env = DroneEnv()
+writer = SummaryWriter()  #"runs/Mar03_14-55-58_DESKTOP-QGNSALL"
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+print('Using device:', device)
+if device.type == 'cuda':
+    print(torch.cuda.get_device_name(0))
 
 class DQN(nn.Module):
     def __init__(self, in_channels=1, num_actions=4):
@@ -42,25 +39,26 @@ class DQN(nn.Module):
 
 
 class Agent:
-    def __init__(self):
+    def __init__(self, useGPU = False):
         self.eps_start = 0.9
         self.eps_end = 0.05
         self.eps_decay = 10000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 20
+        self.batch_size = 50
         self.max_episodes = 10000
         self.save_interval = 100
-
         self.dqn = DQN()
         self.episode = -1
+        self.useGPU = useGPU
 
+        self.env = DroneEnv()
+
+        # LOGGING
         cwd = os.getcwd()
         self.model_dir = os.path.join(cwd, "saved models")
-
         if not os.path.exists(self.model_dir):
             os.mkdir("saved models")
-
 
         files = glob.glob(self.model_dir + '\\*.pth')
         if len(files) > 0:
@@ -77,14 +75,15 @@ class Agent:
             if os.path.exists("last_episode.txt"):
                 open('last_episode.txt', 'w').close()
 
-        #self.dqn = self.dqn.to(device) # to use GPU
+        if self.useGPU:
+            self.dqn = self.dqn.to(device)  # to use GPU
 
-        """Get observation
-        responses = env.client.simGetImages(
+        """Get observation"""
+        responses = self.env.client.simGetImages(
             [airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)]
         )
 
-        Transform input binary array to image
+        """Transform input binary array to image"""
         response = responses[0]
         img1d = np.fromstring(
             response.image_data_uint8, dtype=np.uint8
@@ -95,19 +94,22 @@ class Agent:
         image = Image.fromarray(img_rgba)
         im_final = np.array(image.resize((84, 84)).convert("L"))
 
-        oimg = image = Image.fromarray(im_final)
-        oimg.save("a.jpg")
+        """oimg = image = Image.fromarray(im_final)
+        oimg.save("a.jpg")"""
 
         #tensor = torch.from_numpy(im_final)
         tensor = self.transformToTensor(im_final)
+        self.tensor = self.transformToTensor(im_final)
 
-        self.model = self.dqn.forward(tensor)"""
         self.memory = deque(maxlen=10000)
         self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
         self.steps_done = 0
 
     def transformToTensor(self, img):
-        tensor = torch.Tensor(img)
+        if self.useGPU:
+            tensor = torch.cuda.FloatTensor(img)
+        else:
+            tensor = torch.Tensor(img)
         tensor = tensor.unsqueeze(0)
         tensor = tensor.unsqueeze(0)
         tensor = tensor.float()
@@ -119,20 +121,27 @@ class Agent:
         )
         self.steps_done += 1
         if random.random() > self.eps_threshold:
-            data = self.dqn(state).data
-            action = np.argmax(data.squeeze().numpy())
-
-            return torch.LongTensor([action])
+            print("greedy")
+            if self.useGPU:
+                action = np.argmax(self.dqn(state).cpu().data.squeeze().numpy())
+                return torch.cuda.FloatTensor([action])
+            else:
+                data = self.dqn(state).data
+                action = np.argmax(data.squeeze().numpy())
+                return torch.LongTensor([action])
         else:
             action = [random.randrange(0, 4)]
-            return torch.LongTensor([action])
+            if self.useGPU:
+                return torch.cuda.FloatTensor([action])
+            else:
+                return torch.LongTensor([action])
 
     def memorize(self, state, action, reward, next_state):
         self.memory.append(
             (
                 state,
                 action,
-                torch.FloatTensor([reward]),
+                torch.cuda.FloatTensor([reward]) if self.useGPU else torch.FloatTensor([reward]),
                 self.transformToTensor(next_state),
             )
         )
@@ -140,8 +149,6 @@ class Agent:
     def learn(self):
         if len(self.memory) < self.batch_size:
             return
-
-        print("learn")
 
         batch = random.sample(self.memory, self.batch_size)
         states, actions, rewards, next_states = zip(*batch)
@@ -151,21 +158,18 @@ class Agent:
         rewards = torch.cat(rewards)
         next_states = torch.cat(next_states)
 
-
-        next_q_values = self.dqn(next_states).detach().numpy()
-        #print("next_q_values", next_q_values)
-        actions = np.argmax(next_q_values, 1)
-        #print("actions", actions)
-        max_next_q = next_q_values[[range(0,self.batch_size)], [actions]]
-        #print("max_next_q", max_next_q)
-        current_q = self.dqn(states)[[range(0,self.batch_size)], [actions]]
-
-        expected_q = rewards + (self.gamma * max_next_q)
-
-        """print(current_q)
-        print("current:", current_q.shape)
-        print("current s:", current_q.squeeze().shape)
-        print("expected:", expected_q.shape)"""
+        if self.useGPU:
+            next_q_values = self.dqn(next_states).cpu().detach().numpy()
+            actions = np.argmax(next_q_values, 1)
+            max_next_q = torch.cuda.FloatTensor(next_q_values[[range(0, self.batch_size)], [actions]])
+            current_q = torch.cuda.FloatTensor(self.dqn(states)[[range(0, self.batch_size)], [actions]])
+            expected_q = rewards.to(device) + (self.gamma * max_next_q).to(device)
+        else:
+            next_q_values = self.dqn(next_states).detach().numpy()
+            actions = np.argmax(next_q_values, 1)
+            max_next_q = next_q_values[[range(0,self.batch_size)], [actions]]
+            current_q = self.dqn(states)[[range(0,self.batch_size)], [actions]]
+            expected_q = rewards + (self.gamma * max_next_q)
 
         loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
         self.optimizer.zero_grad()
@@ -180,14 +184,15 @@ class Agent:
             self.episode = 1
 
         for e in range(1, self.max_episodes + 1):
-            state = env.reset()
+            start = time.time()
+            state = self.env.reset()
             steps = 0
             score = 0
             while True:
                 state = self.transformToTensor(state)
 
                 action = self.act(state)
-                next_state, reward, done = env.step(action)
+                next_state, reward, done = self.env.step(action)
 
                 self.memorize(state, action, reward, next_state)
                 self.learn()
@@ -204,6 +209,30 @@ class Agent:
                         file.write("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}\n".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
                     break
 
+                    print('Memory Usage:')
+
+                    if self.useGPU:
+                        print('Total Memory:', round(torch.cuda.get_device_properties(0).total_memory / 1024 ** 3, 1), 'GB')
+                        print('Allocated:', round(torch.cuda.memory_allocated(0) / 1024 ** 3, 1), 'GB')
+                        print('Cached:   ', round(torch.cuda.memory_reserved(0) / 1024 ** 3, 1), 'GB')
+                        print('Free Memory:', round(torch.cuda.memory_reserved(0) - torch.cuda.memory_allocated(0) / 1024 ** 3, 1), 'GB')
+
+                        # tensorboard --logdir=runs
+                        memory_usage_allocated = np.float64(round(torch.cuda.memory_allocated(0) / 1024 ** 3, 1))
+                        memory_usage_cached = np.float64(round(torch.cuda.memory_reserved(0) / 1024 ** 3, 1))
+
+                        writer.add_scalar("memory_usage_allocated", memory_usage_allocated, e)
+                        writer.add_scalar("memory_usage_cached", memory_usage_cached, e)
+
+                    writer.add_scalar('epsilon_value', self.eps_threshold, e)
+                    writer.add_scalar('score_history', score, e)
+                    writer.add_scalar('reward_history', reward, e)
+                    writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
+                                                        'score_history': score,
+                                                        'reward_history': reward}, e)
+
+                    writer.add_graph(self.dqn, self.tensor)
+
             if self.episode % self.save_interval == 0:
                 torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
                 with open("last_episode.txt", "w") as file:
@@ -218,3 +247,8 @@ class Agent:
                     print("sum:", sum(score_history[-self.save_interval:]))
 
             self.episode += 1
+            end = time.time()
+            stopWatch = end - start
+            print("Episode is done")
+            print('Total Training Time (second):', stopWatch)
+            writer.close()

@@ -24,13 +24,14 @@ MOVEMENT_INTERVAL = 1
 class DroneEnv(object):
     """Drone environment class using AirSim python API"""
 
-    def __init__(self):
+    def __init__(self, useGPU=False):
         self.client = airsim.MultirotorClient()
 
         self.last_dist = 1000000
         collision = False
         self.quad_offset = (0, 0, 0)
         self.ep = 0
+        self.useGPU = useGPU
 
     def step(self, action):
         """Step"""
@@ -51,11 +52,15 @@ class DroneEnv(object):
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
 
+        if quad_state.z_val < - 7.3:
+            self.client.moveToPositionAsync(quad_state.x_val, quad_state.y_val, -7, 1).join()
+
         collision = self.client.simGetCollisionInfo().has_collided
 
         result = self.compute_reward(quad_state, quad_vel, collision)
         state = self.get_obs()
         done = self.isDone(result)
+
         return state, result, done
 
     def reset(self):
@@ -99,9 +104,6 @@ class DroneEnv(object):
         if collision:
             reward = -100
             print("collided")
-        elif quad_state.z_val < -23:
-            reward = -100
-            print("too high")
         else:
             dist = self.get_distance(quad_state)
 
@@ -154,7 +156,10 @@ class DroneEnv(object):
         return im_final
 
     def transformToTensor(self, img):
-        tensor = torch.Tensor(img)
+        if self.useGPU:
+            tensor = torch.cuda.FloatTensor(img)
+        else:
+            tensor = torch.Tensor(img)
         tensor = tensor.unsqueeze(0)
         tensor = tensor.unsqueeze(0)
         tensor = tensor.float()

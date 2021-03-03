@@ -1,6 +1,5 @@
-episode:1, reward: -100, mean reward: -8.46, score: -110, epsilon: 0.8989806117552734
-episode:2, reward: -100, mean reward: -2.65, score: -127, epsilon: 0.894915269445845
-episode:3, reward: -100, mean reward: -7.6, score: -114, epsilon: 0.8936488465962676
-episode:4, reward: -100, mean reward: -2.41, score: -111, epsilon: 0.8897769740362126
-episode:5, reward: -100, mean reward: -2.89, score: -110, epsilon: 0.8865918770518776
-episode:6, reward: -100, mean reward: -5.33, score: -96, epsilon: 0.8850873661392236
+episode:1, reward: -100, mean reward: -1.36, score: -128, epsilon: 0.8921316445638681
+episode:2, reward: -100, mean reward: -1.77, score: -99, epsilon: 0.8874288873643349
+episode:3, reward: -100, mean reward: -2.7, score: -124, epsilon: 0.8835855609103663
+episode:4, reward: -100, mean reward: -1.29, score: -124, epsilon: 0.8756214285255168
+episode:5, reward: -100, mean reward: -3.29, score: -92, epsilon: 0.8733129219430849
