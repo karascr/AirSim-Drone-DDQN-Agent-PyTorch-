@@ -115,7 +115,7 @@ class DroneEnv(object):
                 reward = -100
                 print("stucked")
             elif diff < -1:
-                reward = 2
+                reward = 3
             elif dist < 10:
                 reward = 500
 
