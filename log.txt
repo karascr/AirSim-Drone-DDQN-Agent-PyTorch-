@@ -314,3 +314,5 @@ episode:246, reward: -100, mean reward: -4.24, score: -123, epsilon: 0.703539511
 episode:247, reward: -100, mean reward: -5.04, score: -126, epsilon: 0.7029951221450448
 episode:248, reward: -100, mean reward: -4.79, score: -115, epsilon: 0.7024729349500566
 episode:249, reward: -100, mean reward: -3.6, score: -108, epsilon: 0.7018207881428558
+episode:250, reward: -100, mean reward: -4.03, score: -121, epsilon: 0.7011692931564973
+episode:251, reward: -100, mean reward: -12.22, score: -110, epsilon: 0.7009739716682385
