@@ -239,7 +239,6 @@ class Agent:
 
                     break
 
-
             if self.episode % self.save_interval == 0:
                 torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
                 with open("last_episode.txt", "w") as file:
@@ -249,9 +248,6 @@ class Agent:
                                "last {0} episodes: score mean: {1}, reward mean: {2}\n"
                                "**********************************************************\n"
                                .format(self.save_interval, round(sum(score_history[-self.save_interval:])/self.save_interval, 2), round(sum(reward_history[-self.save_interval:])/self.save_interval, 2)))
-
-                    print("score_history:", score_history)
-                    print("sum:", sum(score_history[-self.save_interval:]))
 
             self.episode += 1
             end = time.time()
