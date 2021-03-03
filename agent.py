@@ -39,15 +39,15 @@ class DQN(nn.Module):
 
 
 class Agent:
-    def __init__(self, useGPU = False):
+    def __init__(self, useGPU=False):
         self.eps_start = 0.9
         self.eps_end = 0.05
-        self.eps_decay = 10000
+        self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
         self.batch_size = 64
         self.max_episodes = 10000
-        self.save_interval = 50
+        self.save_interval = 25
         self.dqn = DQN()
         self.episode = -1
         self.useGPU = useGPU
@@ -69,6 +69,13 @@ class Agent:
             f = open("last_episode.txt", "r")
             self.episode = int(f.read())
             print("checkpoint loaded: ", file, "last episode was: ", self.episode)
+            f.close()
+            f = open("log.txt", "r")
+            txt = f.read()
+            for i in range(len(txt)):
+                if i == ' ':
+                    self.eps_start = int(txt)
+
         else:
             if os.path.exists("log.txt"):
                 open('log.txt', 'w').close()
@@ -111,6 +118,15 @@ class Agent:
         tensor = tensor.unsqueeze(0)
         tensor = tensor.float()
         return tensor
+
+    def convert_size(self, size_bytes):
+        if size_bytes == 0:
+            return "0B"
+        size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+        i = int(math.floor(math.log(size_bytes, 1024)))
+        p = math.pow(1024, i)
+        s = round(size_bytes / p, 2)
+        return "%s %s" % (s, size_name[i])
 
     def act(self, state):
         self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(
@@ -206,10 +222,10 @@ class Agent:
                         file.write("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}\n".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
 
                     if self.useGPU:
-                        print('Total Memory:', round(torch.cuda.get_device_properties(0).total_memory / 1024 ** 3, 1), 'GB')
-                        print('Allocated:', round(torch.cuda.memory_allocated(0) / 1024 ** 3, 1), 'GB')
-                        print('Cached:   ', round(torch.cuda.memory_reserved(0) / 1024 ** 3, 1), 'GB')
-                        print('Free Memory:', round(torch.cuda.memory_reserved(0) - torch.cuda.memory_allocated(0) / 1024 ** 3, 1), 'GB')
+                        print('Total Memory:', self.convert_size(torch.cuda.get_device_properties(0).total_memory))
+                        print('Allocated Memory:', self.convert_size(torch.cuda.memory_allocated(0)))
+                        print('Cached Memory:', self.convert_size(torch.cuda.memory_reserved(0)))
+                        print('Free Memory:', self.convert_size(torch.cuda.get_device_properties(0).total_memory - (torch.cuda.max_memory_allocated() + torch.cuda.max_memory_reserved())))
 
                         # tensorboard --logdir=runs
                         memory_usage_allocated = np.float64(round(torch.cuda.memory_allocated(0) / 1024 ** 3, 1))
