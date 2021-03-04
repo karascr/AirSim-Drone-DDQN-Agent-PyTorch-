@@ -22,9 +22,8 @@ class DQN(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, 84, kernel_size=4, stride=4)
         self.conv2 = nn.Conv2d(84, 42, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(42, 21, kernel_size=2, stride=2)
-        self.fc4 = nn.Linear(21*7*7, 168)
-        self.fc5 = nn.Linear(168, 84)
-        self.fc6 = nn.Linear(84, num_actions)
+        self.fc4 = nn.Linear(21*4*4, 168)
+        self.fc5 = nn.Linear(168, num_actions)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -32,8 +31,7 @@ class DQN(nn.Module):
         x = F.relu(self.conv3(x))
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc4(x))
-        x = F.relu(self.fc5(x))
-        return self.fc6(x)
+        return self.fc5(x)
 
 
 class Agent:

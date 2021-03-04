@@ -92,7 +92,7 @@ class DroneEnv(object):
             img1d = img1d * 3.5 + 30
             img1d[img1d > 255] = 255
             img2d = np.reshape(img1d, (responses[0].height, responses[0].width))
-            image = Image.fromarray(img2d).resize((128, 128)).convert("L")
+            image = Image.fromarray(img2d).resize((84, 84)).convert("L")
             #image.save("depth.png")
         else:
             # Get rgb image
@@ -102,7 +102,7 @@ class DroneEnv(object):
             response = responses[0]
             img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)
             img_rgba = img1d.reshape(response.height, response.width, 3)
-            image = Image.fromarray(img_rgba).resize((128, 128)).convert("L")
+            image = Image.fromarray(img_rgba).resize((84, 84)).convert("L")
 
         obs = np.array(image)
 
