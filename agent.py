@@ -41,7 +41,7 @@ class Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 2
+        self.batch_size = 128
         self.max_episodes = 10000
         self.save_interval = 20
         self.dqn = DQN()
@@ -76,15 +76,18 @@ class Agent:
             self.episode = int(f.read())
             print("checkpoint loaded: ", file, "last episode was: ", self.episode)
             f.close()
-            log_file = glob.glob(os.getcwd() + '\\log.txt')
+            log_file = glob.glob(os.getcwd() + '\\saved_model_params.txt')
             if len(log_file) > 0:
-                f = open("log.txt", "r")
+                f = open("saved_model_params.txt", "r")
                 log = f.read()
                 index = log.rfind("epsilon")
                 if index != -1:
                     print("Saved eps_start is using: ", log[index + 9:index+19])
                     self.eps_start = float(log[index + 9:index+19])
+                else:
+                    print("Could not found saved eps_start parameter.")
                 f.close()
+
 
 
         else:
@@ -92,6 +95,8 @@ class Agent:
                 open('log.txt', 'w').close()
             if os.path.exists("last_episode.txt"):
                 open('last_episode.txt', 'w').close()
+            if os.path.exists("last_episode.txt"):
+                open('saved_model_params.txt', 'w').close()
 
         if self.useGPU:
             self.dqn = self.dqn.to(self.device)  # to use GPU
@@ -254,11 +259,11 @@ class Agent:
                 torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
                 with open("last_episode.txt", "w") as file:
                     file.write(str(self.episode))
-                with open('log.txt', 'a') as file:
+                with open('saved_model_params.txt', 'a') as file:
                     file.write("**********************************************************\n"
-                               "last {0} episodes: score mean: {1}, reward mean: {2}\n"
+                               "episode {}, last {} episodes: score mean: {}, reward mean: {}, epsilon: {}\n"
                                "**********************************************************\n"
-                               .format(self.save_interval, round(sum(score_history[-self.save_interval:])/self.save_interval, 2), round(sum(reward_history[-self.save_interval:])/self.save_interval, 2)))
+                               .format(self.episode, self.save_interval, round(sum(score_history[-self.save_interval:])/self.save_interval, 2), round(sum(reward_history[-self.save_interval:])/self.save_interval, 2), self.eps_threshold))
 
             self.episode += 1
             end = time.time()
