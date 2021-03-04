@@ -41,7 +41,7 @@ class Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 64
+        self.batch_size = 2
         self.max_episodes = 10000
         self.save_interval = 20
         self.dqn = DQN()
@@ -149,17 +149,15 @@ class Agent:
             print("greedy")
             if self.useGPU:
                 action = np.argmax(self.dqn(state).cpu().data.squeeze().numpy())
-                return torch.cuda.FloatTensor([action])
+                return int(action)
             else:
                 data = self.dqn(state).data
                 action = np.argmax(data.squeeze().numpy())
-                return torch.LongTensor([action])
+                return int(action)
+
         else:
-            action = [random.randrange(0, 4)]
-            if self.useGPU:
-                return torch.cuda.FloatTensor([action])
-            else:
-                return torch.LongTensor([action])
+            action = random.randrange(0, 4)
+            return int(action)
 
     def memorize(self, state, action, reward, next_state):
         self.memory.append(
@@ -179,19 +177,17 @@ class Agent:
         states, actions, rewards, next_states = zip(*batch)
 
         states = torch.cat(states)
-        #actions = torch.cat(actions)
+        actions = np.asarray(actions)
         rewards = torch.cat(rewards)
         next_states = torch.cat(next_states)
 
         if self.useGPU:
             next_q_values = self.dqn(next_states).cpu().detach().numpy()
-            actions = np.argmax(next_q_values, 1)
             max_next_q = torch.cuda.FloatTensor(next_q_values[[range(0, self.batch_size)], [actions]])
             current_q = torch.cuda.FloatTensor(self.dqn(states)[[range(0, self.batch_size)], [actions]])
             expected_q = rewards.to(self.device) + (self.gamma * max_next_q).to(self.device)
         else:
             next_q_values = self.dqn(next_states).detach().numpy()
-            actions = np.argmax(next_q_values, 1)
             max_next_q = next_q_values[[range(0, self.batch_size)], [actions]]
             current_q = self.dqn(states)[[range(0, self.batch_size)], [actions]]
             expected_q = rewards + (self.gamma * max_next_q)

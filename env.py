@@ -27,7 +27,7 @@ class DroneEnv(object):
     def __init__(self, useGPU=False):
         self.client = airsim.MultirotorClient()
 
-        self.last_dist = 1000000
+        self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
         collision = False
         self.quad_offset = (0, 0, 0)
         self.ep = 0
@@ -65,7 +65,7 @@ class DroneEnv(object):
 
     def reset(self):
         self.client.reset()
-        self.last_dist = 1000000
+        self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
         self.client.enableApiControl(True)
         self.client.armDisarm(True)
 
@@ -106,24 +106,16 @@ class DroneEnv(object):
             print("collided")
         else:
             dist = self.get_distance(quad_state)
-
-
-            diff = dist - self.last_dist
+            diff = self.last_dist - dist
             #print("dist: ", dist, " last_dist: ", self.last_dist, "diff", diff)
 
-            if diff > 0:
-                reward = -2
-            elif diff == 0.0:
-                reward = -100
-                print("stucked")
-            elif diff < -1:
-                reward = 3
-            elif dist < 10:
+            if dist < 10:
                 reward = 500
+            else:
+                reward += diff
+
 
             self.last_dist = dist
-
-
 
         print("reward: ", reward)
 
@@ -169,13 +161,13 @@ class DroneEnv(object):
         """Interprete action"""
         scaling_factor = 3
 
-        if action.item() == 0:
+        if action == 0:
             self.quad_offset = (scaling_factor, 0, 0)
-        elif action.item() == 1:
+        elif action == 1:
             self.quad_offset = (-scaling_factor, 0, 0)
-        elif action.item() == 2:
+        elif action == 2:
             self.quad_offset = (0, scaling_factor, 0)
-        elif action.item() == 3:
+        elif action == 3:
             self.quad_offset = (0, -scaling_factor, 0)
 
         """if action.item() == 0:
