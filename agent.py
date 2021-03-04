@@ -15,10 +15,6 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 
 writer = SummaryWriter()  #"runs/Mar03_14-55-58_DESKTOP-QGNSALL"
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-print('Using device:', device)
-if device.type == 'cuda':
-    print(torch.cuda.get_device_name(0))
 
 class DQN(nn.Module):
     def __init__(self, in_channels=1, num_actions=4):
@@ -53,6 +49,15 @@ class Agent:
         self.useGPU = useGPU
 
         self.env = DroneEnv()
+
+        if self.useGPU:
+            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = torch.device('cpu')
+
+        print('Using device:', self.device)
+        if self.device.type == 'cuda':
+            print(torch.cuda.get_device_name(0))
 
         # LOGGING
         cwd = os.getcwd()
@@ -89,7 +94,7 @@ class Agent:
                 open('last_episode.txt', 'w').close()
 
         if self.useGPU:
-            self.dqn = self.dqn.to(device)  # to use GPU
+            self.dqn = self.dqn.to(self.device)  # to use GPU
 
         """Get observation"""
         responses = self.env.client.simGetImages(
@@ -183,12 +188,12 @@ class Agent:
             actions = np.argmax(next_q_values, 1)
             max_next_q = torch.cuda.FloatTensor(next_q_values[[range(0, self.batch_size)], [actions]])
             current_q = torch.cuda.FloatTensor(self.dqn(states)[[range(0, self.batch_size)], [actions]])
-            expected_q = rewards.to(device) + (self.gamma * max_next_q).to(device)
+            expected_q = rewards.to(self.device) + (self.gamma * max_next_q).to(self.device)
         else:
             next_q_values = self.dqn(next_states).detach().numpy()
             actions = np.argmax(next_q_values, 1)
-            max_next_q = next_q_values[[range(0,self.batch_size)], [actions]]
-            current_q = self.dqn(states)[[range(0,self.batch_size)], [actions]]
+            max_next_q = next_q_values[[range(0, self.batch_size)], [actions]]
+            current_q = self.dqn(states)[[range(0, self.batch_size)], [actions]]
             expected_q = rewards + (self.gamma * max_next_q)
 
         loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
@@ -241,23 +246,12 @@ class Agent:
                         writer.add_scalar("memory_usage_allocated", memory_usage_allocated, self.episode)
                         writer.add_scalar("memory_usage_cached", memory_usage_cached, self.episode)
 
-                        writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
-                        writer.add_scalar('score_history', score, self.episode)
-                        writer.add_scalar('reward_history', reward, self.episode)
-                        writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
-                                                            'score_history': score,
-                                                            'reward_history': reward}, self.episode)
-
-                    else:
-                        writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
-                        writer.add_scalar('score_history', score, self.episode)
-                        writer.add_scalar('reward_history', reward, self.episode)
-                        writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
-                                                        'score_history': score,
-                                                        'reward_history': reward}, self.episode)
-
-                        writer.add_graph(self.dqn, self.tensor)
-
+                    writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
+                    writer.add_scalar('score_history', score, self.episode)
+                    writer.add_scalar('reward_history', reward, self.episode)
+                    writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
+                                                    'score_history': score,
+                                                    'reward_history': reward}, self.episode)
                     break
 
             if self.episode % self.save_interval == 0:

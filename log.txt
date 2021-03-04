@@ -316,3 +316,92 @@ episode:248, reward: -100, mean reward: -4.79, score: -115, epsilon: 0.702472934
 episode:249, reward: -100, mean reward: -3.6, score: -108, epsilon: 0.7018207881428558
 episode:250, reward: -100, mean reward: -4.03, score: -121, epsilon: 0.7011692931564973
 episode:251, reward: -100, mean reward: -12.22, score: -110, epsilon: 0.7009739716682385
+episode:252, reward: -100, mean reward: -2.25, score: -128, epsilon: 0.6997382953862694
+episode:253, reward: -100, mean reward: -5.1, score: -102, epsilon: 0.6993052808768858
+episode:254, reward: -100, mean reward: -3.38, score: -115, epsilon: 0.6985698183993511
+episode:255, reward: -100, mean reward: -10.8, score: -108, epsilon: 0.698353664487538
+episode:256, reward: -100, mean reward: -13.5, score: -108, epsilon: 0.6981807932275337
+episode:257, reward: -100, mean reward: -7.12, score: -114, epsilon: 0.6978351889738055
+episode:258, reward: -100, mean reward: -11.67, score: -105, epsilon: 0.6976408675667818
+episode:259, reward: -100, mean reward: -3.29, score: -112, epsilon: 0.6969072903558123
+episode:260, reward: -100, mean reward: -6.0, score: -114, epsilon: 0.6964977121187191
+**********************************************************
+last 20 episodes: score mean: -113.65, reward mean: -100.0
+**********************************************************
+episode:261, reward: -100, mean reward: -9.55, score: -105, epsilon: 0.6962607064113107
+episode:262, reward: -100, mean reward: -10.7, score: -107, epsilon: 0.6960453220752238
+episode:263, reward: -100, mean reward: -2.61, score: -133, epsilon: 0.6949479780344078
+episode:264, reward: -100, mean reward: -1.97, score: -148, epsilon: 0.6933376218732503
+episode:265, reward: -100, mean reward: -5.86, score: -129, epsilon: 0.6928660138946037
+episode:260, reward: -100, mean reward: -4.87, score: -112, epsilon: 0.6923947477432804
+**********************************************************
+last 20 episodes: score mean: -5.6, reward mean: -5.0
+**********************************************************
+episode:261, reward: -100, mean reward: -4.61, score: -106, epsilon: 0.6919024338477847
+episode:262, reward: -100, mean reward: -9.55, score: -105, epsilon: 0.6916671127668752
+episode:263, reward: -100, mean reward: -10.8, score: -108, epsilon: 0.6914532593734986
+episode:264, reward: -100, mean reward: -5.32, score: -117, epsilon: 0.6909830327541249
+episode:265, reward: -100, mean reward: -10.36, score: -114, epsilon: 0.690748048725153
+episode:266, reward: -100, mean reward: -12.22, score: -110, epsilon: 0.6905558531413145
+episode:267, reward: -100, mean reward: -12.22, score: -110, epsilon: 0.6903637152075033
+episode:268, reward: -100, mean reward: -5.55, score: -111, epsilon: 0.6899369483354617
+episode:269, reward: -100, mean reward: -9.82, score: -108, epsilon: 0.6897023478004652
+episode:270, reward: -100, mean reward: -7.47, score: -112, epsilon: 0.689382576576033
+episode:271, reward: -100, mean reward: -9.82, score: -108, epsilon: 0.6891481792734201
+episode:272, reward: -100, mean reward: -13.5, score: -108, epsilon: 0.6889777624821959
+episode:273, reward: -100, mean reward: -2.82, score: -110, epsilon: 0.688147631093282
+episode:274, reward: -100, mean reward: -8.75, score: -105, epsilon: 0.687892423085849
+episode:275, reward: -100, mean reward: -4.6, score: -115, epsilon: 0.6873610674955231
+episode:276, reward: -100, mean reward: -4.38, score: -114, epsilon: 0.6868089271990486
+episode:277, reward: -100, mean reward: -8.83, score: -106, epsilon: 0.6865542545660913
+episode:278, reward: -100, mean reward: -11.2, score: -112, epsilon: 0.6863421051747655
+episode:279, reward: -100, mean reward: -6.75, score: -108, epsilon: 0.6860028132045735
+episode:280, reward: -100, mean reward: -3.12, score: -125, epsilon: 0.6851553745382913
+**********************************************************
+last 20 episodes: score mean: -110.6, reward mean: -100.0
+**********************************************************
+episode:281, reward: -100, mean reward: -5.14, score: -108, epsilon: 0.6847109213528779
+episode:282, reward: -100, mean reward: -2.86, score: -126, epsilon: 0.6837806943347922
+episode:283, reward: -100, mean reward: -15.29, score: -107, epsilon: 0.6836328294243578
+episode:284, reward: -100, mean reward: -4.31, score: -112, epsilon: 0.6830839188677889
+episode:285, reward: -100, mean reward: -13.62, score: -109, epsilon: 0.6829151189970739
+episode:286, reward: -100, mean reward: -15.14, score: -106, epsilon: 0.6827674560306572
+episode:287, reward: -100, mean reward: -5.74, score: -109, epsilon: 0.6823668301867464
+episode:288, reward: -100, mean reward: -4.03, score: -117, epsilon: 0.6817558376115553
+episode:289, reward: -100, mean reward: -12.88, score: -103, epsilon: 0.6815873918486256
+episode:290, reward: -100, mean reward: -13.62, score: -109, epsilon: 0.6814189909985773
+episode:291, reward: -100, mean reward: -7.19, score: -115, epsilon: 0.6810823239892274
+episode:292, reward: -100, mean reward: -8.62, score: -112, epsilon: 0.6808089142252259
+episode:293, reward: -100, mean reward: -9.33, score: -112, epsilon: 0.6805566411175211
+episode:294, reward: -100, mean reward: -17.5, score: -105, epsilon: 0.6804305423995897
+episode:295, reward: -100, mean reward: -17.5, score: -105, epsilon: 0.6803044688988801
+episode:296, reward: -100, mean reward: -11.2, score: -112, epsilon: 0.6800944024222716
+episode:280, reward: -100, mean reward: -5.14, score: -113, epsilon: 0.6796534882571139
+episode:280, reward: -100, mean reward: -8.31, score: -108, epsilon: 0.6794016689735628
+**********************************************************
+last 20 episodes: score mean: -5.4, reward mean: -5.0
+**********************************************************
+episode:280, reward: -100, mean reward: -12.33, score: -111, epsilon: 0.67923384193407
+episode:280, reward: -100, mean reward: -10.36, score: -114, epsilon: 0.6790241303402184
+**********************************************************
+last 20 episodes: score mean: -5.7, reward mean: -5.0
+**********************************************************
+episode:281, reward: -100, mean reward: -2.89, score: -110, epsilon: 0.6782278708459301
+episode:282, reward: -100, mean reward: -14.57, score: -102, epsilon: 0.6780813014431613
+episode:283, reward: -100, mean reward: -6.82, score: -116, epsilon: 0.6777254895285738
+episode:280, reward: -100, mean reward: -4.2, score: -126, epsilon: 0.6771189718954795
+**********************************************************
+last 20 episodes: score mean: -6.3, reward mean: -5.0
+**********************************************************
+episode:280, reward: -100, mean reward: -7.92, score: -103, epsilon: 0.676868172574829
+**********************************************************
+last 20 episodes: score mean: -5.15, reward mean: -5.0
+**********************************************************
+episode:281, reward: -100, mean reward: -10.8, score: -108, epsilon: 0.6766592513394444
+episode:282, reward: -100, mean reward: -13.0, score: -104, epsilon: 0.6764921644849913
+episode:283, reward: -100, mean reward: -15.29, score: -107, epsilon: 0.6763460000331274
+episode:284, reward: -100, mean reward: -15.14, score: -106, epsilon: 0.6761998696823235
+episode:285, reward: -100, mean reward: -6.47, score: -110, epsilon: 0.6758451236103833
+episode:286, reward: -100, mean reward: -3.78, score: -121, epsilon: 0.6751779113883123
+episode:287, reward: -100, mean reward: -3.57, score: -125, epsilon: 0.6744489624612484
+episode:288, reward: -100, mean reward: -10.0, score: -110, epsilon: 0.6742200398133962
