@@ -543,3 +543,5 @@ episode:405, reward: -100, mean reward: -2.29, score: -96, epsilon: 0.5690514099
 episode:406, reward: -100, mean reward: -0.79, score: -267, epsilon: 0.5632533591729761
 episode:407, reward: -100, mean reward: -3.38, score: -115, epsilon: 0.5626720015308042
 episode:408, reward: -100, mean reward: -0.31, score: -66, epsilon: 0.5589940197430858
+episode:409, reward: -100, mean reward: -5.36, score: -118, epsilon: 0.5586208942913281
+episode:410, reward: -100, mean reward: -3.89, score: -136, epsilon: 0.5580278492581908
