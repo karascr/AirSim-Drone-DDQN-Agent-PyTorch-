@@ -22,8 +22,9 @@ class DQN(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, 84, kernel_size=4, stride=4)
         self.conv2 = nn.Conv2d(84, 42, kernel_size=4, stride=2)
         self.conv3 = nn.Conv2d(42, 21, kernel_size=2, stride=2)
-        self.fc4 = nn.Linear(21*4*4, 168)
-        self.fc5 = nn.Linear(168, num_actions)
+        self.fc4 = nn.Linear(21*7*7, 168)
+        self.fc5 = nn.Linear(168, 84)
+        self.fc6 = nn.Linear(84, num_actions)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -31,11 +32,12 @@ class DQN(nn.Module):
         x = F.relu(self.conv3(x))
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc4(x))
-        return self.fc5(x)
+        x = F.relu(self.fc5(x))
+        return self.fc6(x)
 
 
 class Agent:
-    def __init__(self, useGPU=False):
+    def __init__(self, useGPU=False, useDepth=False):
         self.eps_start = 0.9
         self.eps_end = 0.05
         self.eps_decay = 30000
@@ -47,8 +49,9 @@ class Agent:
         self.dqn = DQN()
         self.episode = -1
         self.useGPU = useGPU
+        self.useDepth = useDepth
 
-        self.env = DroneEnv()
+        self.env = DroneEnv(useGPU, useDepth)
 
         if self.useGPU:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -101,25 +104,8 @@ class Agent:
         if self.useGPU:
             self.dqn = self.dqn.to(self.device)  # to use GPU
 
-        """Get observation"""
-        responses = self.env.client.simGetImages(
-            [airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)]
-        )
-
-        """Transform input binary array to image"""
-        response = responses[0]
-        img1d = np.fromstring(
-            response.image_data_uint8, dtype=np.uint8
-        )
-        img_rgba = img1d.reshape(
-            response.height, response.width, 3
-        )
-        image = Image.fromarray(img_rgba)
-        im_final = np.array(image.resize((84, 84)).convert("L"))
-
-        """oimg = image = Image.fromarray(im_final)
-        oimg.save("a.jpg")"""
-        tensor = self.transformToTensor(im_final)
+        obs = self.env.reset()
+        tensor = self.transformToTensor(obs)
         writer.add_graph(self.dqn, tensor)
 
         self.memory = deque(maxlen=10000)

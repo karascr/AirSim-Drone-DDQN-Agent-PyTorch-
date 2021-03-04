@@ -24,7 +24,7 @@ MOVEMENT_INTERVAL = 1
 class DroneEnv(object):
     """Drone environment class using AirSim python API"""
 
-    def __init__(self, useGPU=False):
+    def __init__(self, useGPU=False, useDepth=False):
         self.client = airsim.MultirotorClient()
 
         self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
@@ -32,6 +32,7 @@ class DroneEnv(object):
         self.quad_offset = (0, 0, 0)
         self.ep = 0
         self.useGPU = useGPU
+        self.useDepth = useDepth
 
     def step(self, action):
         """Step"""
@@ -49,10 +50,10 @@ class DroneEnv(object):
         ).join()
         time.sleep(0.5)
 
+        collision = self.client.simGetCollisionInfo().has_collided
+
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
-
-        collision = self.client.simGetCollisionInfo().has_collided
 
         if quad_state.z_val < - 7.3:
             self.client.moveToPositionAsync(quad_state.x_val, quad_state.y_val, -7, 1).join()
@@ -82,11 +83,29 @@ class DroneEnv(object):
         return obs
 
     def get_obs(self):
-        """Get observation"""
-        responses = self.client.simGetImages(
-            [airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)]
-        )
-        obs = self.transform_input(responses)
+        if self.useDepth:
+            # get depth image
+            responses = self.client.simGetImages(
+                [airsim.ImageRequest(0, airsim.ImageType.DepthPlanner, pixels_as_float=True)])
+            response = responses[0]
+            img1d = np.array(response.image_data_float, dtype=np.float)
+            img1d = img1d * 3.5 + 30
+            img1d[img1d > 255] = 255
+            img2d = np.reshape(img1d, (responses[0].height, responses[0].width))
+            image = Image.fromarray(img2d).resize((128, 128)).convert("L")
+            #image.save("depth.png")
+        else:
+            # Get rgb image
+            responses = self.client.simGetImages(
+                [airsim.ImageRequest("1", airsim.ImageType.Scene, False, False)]
+            )
+            response = responses[0]
+            img1d = np.fromstring(response.image_data_uint8, dtype=np.uint8)
+            img_rgba = img1d.reshape(response.height, response.width, 3)
+            image = Image.fromarray(img_rgba).resize((128, 128)).convert("L")
+
+        obs = np.array(image)
+
         return obs
 
     def get_distance(self, quad_state):
@@ -132,20 +151,6 @@ class DroneEnv(object):
             done = 1
             time.sleep(1)
         return done
-
-    def transform_input(self, responses):
-        """Transform input binary array to image"""
-        response = responses[0]
-        img1d = np.fromstring(
-            response.image_data_uint8, dtype=np.uint8
-        )
-        img_rgba = img1d.reshape(
-            response.height, response.width, 3
-        )
-        image = Image.fromarray(img_rgba)
-        im_final = np.array(image.resize((84, 84)).convert("L"))
-
-        return im_final
 
     def transformToTensor(self, img):
         if self.useGPU:
