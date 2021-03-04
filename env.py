@@ -52,10 +52,10 @@ class DroneEnv(object):
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
 
+        collision = self.client.simGetCollisionInfo().has_collided
+
         if quad_state.z_val < - 7.3:
             self.client.moveToPositionAsync(quad_state.x_val, quad_state.y_val, -7, 1).join()
-
-        collision = self.client.simGetCollisionInfo().has_collided
 
         result = self.compute_reward(quad_state, quad_vel, collision)
         state = self.get_obs()
