@@ -36,20 +36,23 @@ class DQN(nn.Module):
 
 class Agent:
     def __init__(self, useGPU=False, useDepth=False):
+        self.useGPU = useGPU
+        self.useDepth = useDepth
         self.eps_start = 0.9
         self.eps_end = 0.05
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 128
+        self.batch_size = 256
         self.max_episodes = 10000
-        self.save_interval = 20
+        self.save_interval = 10
         self.dqn = DQN()
         self.episode = -1
-        self.useGPU = useGPU
-        self.useDepth = useDepth
-
         self.env = DroneEnv(useGPU, useDepth)
+        self.memory = deque(maxlen=10000)
+        self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
+        self.steps_done = 0
+
 
         if self.useGPU:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -62,34 +65,24 @@ class Agent:
 
         # LOGGING
         cwd = os.getcwd()
-        self.model_dir = os.path.join(cwd, "saved models")
-        if not os.path.exists(self.model_dir):
+        self.save_dir = os.path.join(cwd, "saved models")
+        if not os.path.exists(self.save_dir):
             os.mkdir("saved models")
 
-        files = glob.glob(self.model_dir + '\\*.pth')
+        files = glob.glob(self.save_dir + '\\*.pt')
         if len(files) > 0:
             files.sort(key=os.path.getmtime)
             file = files[-1]
-            self.dqn.load_state_dict(torch.load(file))
-            self.dqn.eval()
-
-            f = open("last_episode.txt", "r")
-            self.episode = int(f.read())
-            print("checkpoint loaded: ", file, "last episode was: ", self.episode)
-            f.close()
-            log_file = glob.glob(os.getcwd() + '\\saved_model_params.txt')
-            if len(log_file) > 0:
-                f = open("saved_model_params.txt", "r")
-                log = f.read()
-                index = log.rfind("epsilon")
-                if index != -1:
-                    print("Saved eps_start is using: ", log[index + 9:index+19])
-                    self.eps_start = float(log[index + 9:index+19])
-                else:
-                    print("Could not found saved eps_start parameter.")
-                f.close()
-
-
+            checkpoint = torch.load(file)
+            self.dqn.load_state_dict(checkpoint['state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
+            self.eps_start = checkpoint['eps_threshold']
+            self.episode = checkpoint['episode']
+            self.steps_done = checkpoint['steps_done']
+            print("Saved parameters loaded"
+                  "\nModel: ", file,
+                  "\nEpsilon: ", self.eps_start,
+                  "\nEpisode: ", self.episode)
 
         else:
             if os.path.exists("log.txt"):
@@ -105,11 +98,6 @@ class Agent:
         obs = self.env.reset()
         tensor = self.transformToTensor(obs)
         writer.add_graph(self.dqn, tensor)
-
-        self.memory = deque(maxlen=10000)
-        self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
-        self.steps_done = 0
-
     def transformToTensor(self, img):
         if self.useGPU:
             tensor = torch.cuda.FloatTensor(img)
@@ -239,15 +227,16 @@ class Agent:
                                                     'reward_history': reward}, self.episode)
                     break
 
+            # save checkpoint
             if self.episode % self.save_interval == 0:
-                torch.save(self.dqn.state_dict(), self.model_dir + '//model_EPISODES_DQN_DRONE{}.pth'.format(self.episode))
-                with open("last_episode.txt", "w") as file:
-                    file.write(str(self.episode))
-                with open('saved_model_params.txt', 'a') as file:
-                    file.write("**********************************************************\n"
-                               "episode {}, last {} episodes: score mean: {}, reward mean: {}, epsilon: {}\n"
-                               "**********************************************************\n"
-                               .format(self.episode, self.save_interval, round(sum(score_history[-self.save_interval:])/self.save_interval, 2), round(sum(reward_history[-self.save_interval:])/self.save_interval, 2), self.eps_threshold))
+                checkpoint = {
+                    'episode': self.episode,
+                    'eps_threshold': self.eps_threshold,
+                    'steps_done': self.steps_done,
+                    'state_dict': self.dqn.state_dict(),
+                    'optimizer': self.optimizer.state_dict()
+                }
+                torch.save(checkpoint, self.save_dir + '//EPISODE{}.pt'.format(self.episode))
 
             self.episode += 1
             end = time.time()
