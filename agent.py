@@ -221,12 +221,12 @@ class Agent:
                         writer.add_scalar("memory_usage_cached", memory_usage_cached, self.episode)
 
                     writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
-                    writer.add_scalar('score_history', score, self.episode)
-                    writer.add_scalar('reward_history', reward, self.episode)
+                    writer.add_scalar('score', score, self.episode)
+                    writer.add_scalar('reward', reward, self.episode)
                     writer.add_scalar('Total steps', self.steps_done, self.episode)
                     writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
-                                                    'score_history': score,
-                                                    'reward_history': reward}, self.episode)
+                                                    'score': score,
+                                                    'reward': reward}, self.episode)
 
                     # save checkpoint
                     if self.episode % self.save_interval == 0:

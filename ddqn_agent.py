@@ -14,7 +14,7 @@ from env import DroneEnv
 from torch.utils.tensorboard import SummaryWriter
 import time
 
-writer = SummaryWriter()  #"runs/Mar03_14-55-58_DESKTOP-QGNSALL"
+writer = SummaryWriter()
 
 class DQN(nn.Module):
     def __init__(self, in_channels=1, num_actions=4):
@@ -33,7 +33,6 @@ class DQN(nn.Module):
         x = F.relu(self.fc4(x))
         return self.fc5(x)
 
-
 class DDQN_Agent:
     def __init__(self, useGPU=False, useDepth=False):
         self.useGPU = useGPU
@@ -43,30 +42,32 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 512
+        self.batch_size = 256
         self.max_episodes = 10000
         self.save_interval = 10
+        self.test_interval = 10
         self.episode = -1
         self.steps_done = 0
         self.network_update_interval = 10
 
-        if self.useGPU:
-            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        if self.useGPU and torch.cuda.is_available():
+            self.device = torch.device('cuda:0')
         else:
             self.device = torch.device('cpu')
 
         self.policy = DQN()
         self.target = DQN()
+        self.test = DQN()
         self.target.eval()
+        self.test.eval()
         self.updateNetworks()
 
         self.env = DroneEnv(useGPU, useDepth)
         self.memory = deque(maxlen=10000)
         self.optimizer = optim.Adam(self.policy.parameters(), self.learning_rate)
 
-
         print('Using device:', self.device)
-        if self.device.type == 'cuda':
+        if torch.cuda.is_available():
             print(torch.cuda.get_device_name(0))
 
         # LOGGING
@@ -77,6 +78,7 @@ class DDQN_Agent:
 
         if self.useGPU:
             self.policy = self.policy.to(self.device)  # to use GPU
+            self.target = self.target.to(self.device)  # to use GPU
 
         # model backup
         files = glob.glob(self.save_dir + '\\*.pt')
@@ -87,6 +89,7 @@ class DDQN_Agent:
             self.policy.load_state_dict(checkpoint['state_dict'])
             self.episode = checkpoint['episode']
             self.steps_done = checkpoint['steps_done']
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
             self.updateNetworks()
             print("Saved parameters loaded"
                   "\nModel: ", file,
@@ -127,12 +130,12 @@ class DDQN_Agent:
         s = round(size_bytes / p, 2)
         return "%s %s" % (s, size_name[i])
 
-    def act(self, state):
+    def act(self, state, test=False):
         self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(
             -1.0 * self.steps_done / self.eps_decay
         )
         self.steps_done += 1
-        if random.random() > self.eps_threshold:
+        if random.random() > self.eps_threshold or test:
             #print("greedy")
             if self.useGPU:
                 action = np.argmax(self.policy(state).cpu().data.squeeze().numpy())
@@ -186,7 +189,6 @@ class DDQN_Agent:
         self.optimizer.step()
 
     def train(self):
-
         score_history = []
         reward_history = []
         if self.episode == -1:
@@ -202,6 +204,10 @@ class DDQN_Agent:
 
                 action = self.act(state)
                 next_state, reward, done = self.env.step(action)
+
+                if steps == 25:
+                    done = 1
+                    print("Max step size reached: ", steps)
 
                 self.memorize(state, action, reward, next_state)
                 self.learn()
@@ -243,12 +249,16 @@ class DDQN_Agent:
                         checkpoint = {
                             'episode': self.episode,
                             'steps_done': self.steps_done,
-                            'state_dict': self.policy.state_dict()
+                            'state_dict': self.policy.state_dict(),
+                            'optimizer': self.optimizer.state_dict()
                         }
                         torch.save(checkpoint, self.save_dir + '//EPISODE{}.pt'.format(self.episode))
 
                     if self.episode % self.network_update_interval == 0:
                         self.updateNetworks()
+
+                    if self.episode % self.test_interval == 0:
+                        self.test()
 
                     self.episode += 1
                     end = time.time()
@@ -257,3 +267,40 @@ class DDQN_Agent:
 
                     break
         writer.close()
+
+    def test(self):
+        self.test.load_state_dict(self.target.state_dict())
+
+        start = time.time()
+        state = self.env.reset()
+        steps = 0
+        score = 0
+
+        while True:
+            state = self.transformToTensor(state)
+
+            action = self.act(state, test=True)
+            next_state, reward, done = self.env.step(action)
+
+            if steps > 25:
+                done = 1
+
+            state = next_state
+            steps += 1
+            score += reward
+
+            if done:
+                print("----------------------------------------------------------------------------------------")
+                print("TEST, reward: {}, score: {}, total steps: {}".format(
+                        reward, score, self.steps_done))
+
+                with open('tests.txt', 'a') as file:
+                    file.write("TEST, reward: {}, score: {}, total steps: {}".format(
+                        reward, score, self.steps_done))
+
+                writer.add_scalars('Test', {'score': score, 'reward': reward}, self.episode)
+
+                end = time.time()
+                stopWatch = end - start
+                print("Test is done, test time: ", stopWatch)
+

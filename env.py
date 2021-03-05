@@ -28,7 +28,6 @@ class DroneEnv(object):
         self.client = airsim.MultirotorClient()
 
         self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
-        collision = False
         self.quad_offset = (0, 0, 0)
         self.ep = 0
         self.useGPU = useGPU
@@ -133,7 +132,6 @@ class DroneEnv(object):
 
         return reward
 
-
     def isDone(self, reward):
         """Check if episode is done"""
         done = 0
@@ -167,20 +165,5 @@ class DroneEnv(object):
             self.quad_offset = (0, scaling_factor, 0)
         elif action == 3:
             self.quad_offset = (0, -scaling_factor, 0)
-
-        """if action.item() == 0:
-            self.quad_offset = (0, 0, 0)
-        elif action.item() == 1:
-            self.quad_offset = (scaling_factor, 0, 0)
-        elif action.item() == 2:
-            self.quad_offset = (0, scaling_factor, 0)
-        elif action.item() == 3:
-            self.quad_offset = (0, 0, scaling_factor)
-        elif action.item() == 4:
-            self.quad_offset = (-scaling_factor, 0, 0)
-        elif action.item() == 5:
-            self.quad_offset = (0, -scaling_factor, 0)
-        elif action.item() == 6:
-            self.quad_offset = (0, 0, -scaling_factor)"""
 
         return self.quad_offset
