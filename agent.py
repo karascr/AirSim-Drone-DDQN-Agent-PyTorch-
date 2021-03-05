@@ -199,12 +199,12 @@ class Agent:
                 steps += 1
                 score += reward
                 if done:
-                    print("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
+                    print("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}, total steps: {5}".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold, self.steps_done))
                     print("----------------------------------------------------------------------------------------")
                     score_history.append(score)
                     reward_history.append(reward)
                     with open('log.txt', 'a') as file:
-                        file.write("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}\n".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold))
+                        file.write("episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}, total steps: {5}\n".format(self.episode, reward, round(score/steps, 2), score, self.eps_threshold, self.steps_done))
 
                     if self.useGPU:
                         print('Total Memory:', self.convert_size(torch.cuda.get_device_properties(0).total_memory))
