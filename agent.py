@@ -70,6 +70,10 @@ class Agent:
         if not os.path.exists(self.save_dir):
             os.mkdir("saved models")
 
+        if self.useGPU:
+            self.dqn = self.dqn.to(self.device)  # to use GPU
+
+        # model backup
         files = glob.glob(self.save_dir + '\\*.pt')
         if len(files) > 0:
             files.sort(key=os.path.getmtime)
@@ -77,12 +81,11 @@ class Agent:
             checkpoint = torch.load(file)
             self.dqn.load_state_dict(checkpoint['state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer'])
-            self.eps_start = checkpoint['eps_threshold']
             self.episode = checkpoint['episode']
             self.steps_done = checkpoint['steps_done']
             print("Saved parameters loaded"
                   "\nModel: ", file,
-                  "\nEpsilon: ", self.eps_start,
+                  "\nSteps done: ", self.steps_done,
                   "\nEpisode: ", self.episode)
 
         else:
@@ -92,9 +95,6 @@ class Agent:
                 open('last_episode.txt', 'w').close()
             if os.path.exists("last_episode.txt"):
                 open('saved_model_params.txt', 'w').close()
-
-        if self.useGPU:
-            self.dqn = self.dqn.to(self.device)  # to use GPU
 
         obs = self.env.reset()
         tensor = self.transformToTensor(obs)
@@ -223,6 +223,7 @@ class Agent:
                     writer.add_scalar('epsilon_value', self.eps_threshold, self.episode)
                     writer.add_scalar('score_history', score, self.episode)
                     writer.add_scalar('reward_history', reward, self.episode)
+                    writer.add_scalar('Total steps', self.steps_done, self.episode)
                     writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
                                                     'score_history': score,
                                                     'reward_history': reward}, self.episode)
@@ -232,7 +233,6 @@ class Agent:
             if self.episode % self.save_interval == 0:
                 checkpoint = {
                     'episode': self.episode,
-                    'eps_threshold': self.eps_threshold,
                     'steps_done': self.steps_done,
                     'state_dict': self.dqn.state_dict(),
                     'optimizer': self.optimizer.state_dict()
