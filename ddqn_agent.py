@@ -46,13 +46,14 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 256
+        self.batch_size = 2
         self.max_episodes = 10000
         self.save_interval = 10
-        self.test_interval = 2
-        self.episode = -1
-        self.steps_done = 0
+        self.test_interval = 10
         self.network_update_interval = 10
+        self.episode = -1
+        self.max_step = 34
+        self.steps_done = 0
 
         if self.useGPU and torch.cuda.is_available():
             self.device = torch.device('cuda:0')
@@ -188,7 +189,6 @@ class DDQN_Agent:
             expected_q = rewards + (self.gamma * max_next_q)
 
         loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
-        print("loss: ", loss, "---", loss.data)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -210,7 +210,7 @@ class DDQN_Agent:
                 action = self.act(state)
                 next_state, reward, done = self.env.step(action)
 
-                if steps == 34:
+                if steps == self.max_step:
                     done = 1
                     print("Max step size reached: ", steps)
 
@@ -287,7 +287,7 @@ class DDQN_Agent:
             action = int(np.argmax(self.test_network(state).cpu().data.squeeze().numpy()))
             next_state, reward, done = self.env.step(action)
 
-            if steps > 34:
+            if steps == self.max_step:
                 done = 1
 
             state = next_state
