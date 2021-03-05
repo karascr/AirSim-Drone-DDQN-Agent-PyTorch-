@@ -46,18 +46,19 @@ class Agent:
         self.batch_size = 256
         self.max_episodes = 10000
         self.save_interval = 10
-        self.dqn = DQN()
         self.episode = -1
-        self.env = DroneEnv(useGPU, useDepth)
-        self.memory = deque(maxlen=10000)
-        self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
         self.steps_done = 0
-
 
         if self.useGPU:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = torch.device('cpu')
+
+        self.dqn = DQN()
+        self.env = DroneEnv(useGPU, useDepth)
+        self.memory = deque(maxlen=10000)
+        self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
+
 
         print('Using device:', self.device)
         if self.device.type == 'cuda':

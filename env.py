@@ -50,7 +50,7 @@ class DroneEnv(object):
         ).join()
         collision = self.client.simGetCollisionInfo().has_collided
 
-        time.sleep(0.5)
+        #time.sleep(0.5)
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
 
