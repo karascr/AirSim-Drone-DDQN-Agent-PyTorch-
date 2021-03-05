@@ -16,6 +16,10 @@ import time
 
 writer = SummaryWriter()
 
+torch.manual_seed(0)
+random.seed(0)
+np.random.seed(0)
+
 class DQN(nn.Module):
     def __init__(self, in_channels=1, num_actions=4):
         super(DQN, self).__init__()
@@ -45,7 +49,7 @@ class DDQN_Agent:
         self.batch_size = 256
         self.max_episodes = 10000
         self.save_interval = 10
-        self.test_interval = 10
+        self.test_interval = 2
         self.episode = -1
         self.steps_done = 0
         self.network_update_interval = 10
@@ -57,9 +61,9 @@ class DDQN_Agent:
 
         self.policy = DQN()
         self.target = DQN()
-        self.test = DQN()
+        self.test_network = DQN()
         self.target.eval()
-        self.test.eval()
+        self.test_network.eval()
         self.updateNetworks()
 
         self.env = DroneEnv(useGPU, useDepth)
@@ -79,6 +83,7 @@ class DDQN_Agent:
         if self.useGPU:
             self.policy = self.policy.to(self.device)  # to use GPU
             self.target = self.target.to(self.device)  # to use GPU
+            self.test_network = self.test_network.to(self.device)  # to use GPU
 
         # model backup
         files = glob.glob(self.save_dir + '\\*.pt')
@@ -130,12 +135,12 @@ class DDQN_Agent:
         s = round(size_bytes / p, 2)
         return "%s %s" % (s, size_name[i])
 
-    def act(self, state, test=False):
+    def act(self, state):
         self.eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(
             -1.0 * self.steps_done / self.eps_decay
         )
         self.steps_done += 1
-        if random.random() > self.eps_threshold or test:
+        if random.random() > self.eps_threshold:
             #print("greedy")
             if self.useGPU:
                 action = np.argmax(self.policy(state).cpu().data.squeeze().numpy())
@@ -205,7 +210,7 @@ class DDQN_Agent:
                 action = self.act(state)
                 next_state, reward, done = self.env.step(action)
 
-                if steps == 25:
+                if steps == 34:
                     done = 1
                     print("Max step size reached: ", steps)
 
@@ -257,32 +262,32 @@ class DDQN_Agent:
                     if self.episode % self.network_update_interval == 0:
                         self.updateNetworks()
 
-                    if self.episode % self.test_interval == 0:
-                        self.test()
-
                     self.episode += 1
                     end = time.time()
                     stopWatch = end - start
                     print("Episode is done, episode time: ", stopWatch)
 
+                    if self.episode % self.test_interval == 0:
+                        self.test()
+
                     break
         writer.close()
 
     def test(self):
-        self.test.load_state_dict(self.target.state_dict())
+        self.test_network.load_state_dict(self.target.state_dict())
 
         start = time.time()
-        state = self.env.reset()
         steps = 0
         score = 0
+        state = self.env.reset()
 
         while True:
             state = self.transformToTensor(state)
 
-            action = self.act(state, test=True)
+            action = int(np.argmax(self.test_network(state).cpu().data.squeeze().numpy()))
             next_state, reward, done = self.env.step(action)
 
-            if steps > 25:
+            if steps > 34:
                 done = 1
 
             state = next_state
@@ -304,3 +309,4 @@ class DDQN_Agent:
                 stopWatch = end - start
                 print("Test is done, test time: ", stopWatch)
 
+                break

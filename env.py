@@ -132,6 +132,7 @@ class DroneEnv(object):
 
         return reward
 
+
     def isDone(self, reward):
         """Check if episode is done"""
         done = 0

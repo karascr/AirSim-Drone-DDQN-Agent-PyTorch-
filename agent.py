@@ -14,6 +14,10 @@ from env import DroneEnv
 from torch.utils.tensorboard import SummaryWriter
 import time
 
+torch.manual_seed(0)
+random.seed(0)
+np.random.seed(0)
+
 writer = SummaryWriter()  #"runs/Mar03_14-55-58_DESKTOP-QGNSALL"
 
 class DQN(nn.Module):
