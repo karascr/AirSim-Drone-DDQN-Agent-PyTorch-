@@ -50,7 +50,7 @@ class DroneEnv(object):
         ).join()
         collision = self.client.simGetCollisionInfo().has_collided
 
-        #time.sleep(0.5)
+        time.sleep(0.5)
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         quad_vel = self.client.getMultirotorState().kinematics_estimated.linear_velocity
 
@@ -68,14 +68,9 @@ class DroneEnv(object):
         self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
         self.client.enableApiControl(True)
         self.client.armDisarm(True)
-
-        collision = False
-
-        print("takeoff")
         self.client.takeoffAsync().join()
         quad_state = self.client.getMultirotorState().kinematics_estimated.position
         self.client.moveToPositionAsync(quad_state.x_val, quad_state.y_val, -7, 1).join()
-        print("ready")
 
         obs = self.get_obs()
 
@@ -121,7 +116,6 @@ class DroneEnv(object):
 
         if collision:
             reward = -100
-            print("collided")
         else:
             dist = self.get_distance(quad_state)
             diff = self.last_dist - dist
@@ -135,7 +129,7 @@ class DroneEnv(object):
 
             self.last_dist = dist
 
-        print("reward: ", reward)
+        #print("reward: ", reward)
 
         return reward
 

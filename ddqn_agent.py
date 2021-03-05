@@ -34,7 +34,7 @@ class DQN(nn.Module):
         return self.fc5(x)
 
 
-class Agent:
+class DDQN_Agent:
     def __init__(self, useGPU=False, useDepth=False):
         self.useGPU = useGPU
         self.useDepth = useDepth
@@ -48,16 +48,21 @@ class Agent:
         self.save_interval = 10
         self.episode = -1
         self.steps_done = 0
+        self.network_update_interval = 10
 
         if self.useGPU:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = torch.device('cpu')
 
-        self.dqn = DQN()
+        self.policy = DQN()
+        self.target = DQN()
+        self.target.eval()
+        self.updateNetworks()
+
         self.env = DroneEnv(useGPU, useDepth)
         self.memory = deque(maxlen=10000)
-        self.optimizer = optim.Adam(self.dqn.parameters(), self.learning_rate)
+        self.optimizer = optim.Adam(self.policy.parameters(), self.learning_rate)
 
 
         print('Using device:', self.device)
@@ -71,7 +76,7 @@ class Agent:
             os.mkdir("saved models")
 
         if self.useGPU:
-            self.dqn = self.dqn.to(self.device)  # to use GPU
+            self.policy = self.policy.to(self.device)  # to use GPU
 
         # model backup
         files = glob.glob(self.save_dir + '\\*.pt')
@@ -79,10 +84,10 @@ class Agent:
             files.sort(key=os.path.getmtime)
             file = files[-1]
             checkpoint = torch.load(file)
-            self.dqn.load_state_dict(checkpoint['state_dict'])
-            self.optimizer.load_state_dict(checkpoint['optimizer'])
+            self.policy.load_state_dict(checkpoint['state_dict'])
             self.episode = checkpoint['episode']
             self.steps_done = checkpoint['steps_done']
+            self.updateNetworks()
             print("Saved parameters loaded"
                   "\nModel: ", file,
                   "\nSteps done: ", self.steps_done,
@@ -98,7 +103,11 @@ class Agent:
 
         obs = self.env.reset()
         tensor = self.transformToTensor(obs)
-        writer.add_graph(self.dqn, tensor)
+        writer.add_graph(self.policy, tensor)
+
+    def updateNetworks(self):
+        self.target.load_state_dict(self.policy.state_dict())
+
     def transformToTensor(self, img):
         if self.useGPU:
             tensor = torch.cuda.FloatTensor(img)
@@ -126,10 +135,10 @@ class Agent:
         if random.random() > self.eps_threshold:
             #print("greedy")
             if self.useGPU:
-                action = np.argmax(self.dqn(state).cpu().data.squeeze().numpy())
+                action = np.argmax(self.policy(state).cpu().data.squeeze().numpy())
                 return int(action)
             else:
-                data = self.dqn(state).data
+                data = self.policy(state).data
                 action = np.argmax(data.squeeze().numpy())
                 return int(action)
 
@@ -160,17 +169,18 @@ class Agent:
         next_states = torch.cat(next_states)
 
         if self.useGPU:
-            next_q_values = self.dqn(next_states).cpu().detach().numpy()
+            current_q = torch.cuda.FloatTensor(self.policy(states)[[range(0, self.batch_size)], [actions]])
+            next_q_values = self.target(next_states).cpu().detach().numpy()
             max_next_q = torch.cuda.FloatTensor(next_q_values[[range(0, self.batch_size)], [actions]])
-            current_q = torch.cuda.FloatTensor(self.dqn(states)[[range(0, self.batch_size)], [actions]])
             expected_q = rewards.to(self.device) + (self.gamma * max_next_q).to(self.device)
         else:
-            next_q_values = self.dqn(next_states).detach().numpy()
+            current_q = self.policy(states)[[range(0, self.batch_size)], [actions]]
+            next_q_values = self.target(next_states).detach().numpy()
             max_next_q = next_q_values[[range(0, self.batch_size)], [actions]]
-            current_q = self.dqn(states)[[range(0, self.batch_size)], [actions]]
             expected_q = rewards + (self.gamma * max_next_q)
 
         loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
+        print("loss: ", loss, "---", loss.data)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -233,10 +243,12 @@ class Agent:
                         checkpoint = {
                             'episode': self.episode,
                             'steps_done': self.steps_done,
-                            'state_dict': self.dqn.state_dict(),
-                            'optimizer': self.optimizer.state_dict()
+                            'state_dict': self.policy.state_dict()
                         }
                         torch.save(checkpoint, self.save_dir + '//EPISODE{}.pt'.format(self.episode))
+
+                    if self.episode % self.network_update_interval == 0:
+                        self.updateNetworks()
 
                     self.episode += 1
                     end = time.time()
