@@ -1,1 +1,1 @@
-# AirSim-PyTorch-Drone
+# AirSim PyTorch Drone DDQN Agent
