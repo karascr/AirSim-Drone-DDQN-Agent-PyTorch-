@@ -48,10 +48,10 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 1024
+        self.batch_size = 2
         self.max_episodes = 10000
         self.save_interval = 10
-        self.test_interval = 10
+        self.test_interval = 1
         self.network_update_interval = 10
         self.episode = -1
         self.steps_done = 0
@@ -79,6 +79,8 @@ class DDQN_Agent:
         self.save_dir = os.path.join(cwd, "saved models")
         if not os.path.exists(self.save_dir):
             os.mkdir("saved models")
+        if not os.path.exists(os.path.join(cwd, "videos")):
+            os.mkdir("videos")
 
         if torch.cuda.is_available():
             self.policy = self.policy.to(device)  # to use GPU
@@ -109,7 +111,7 @@ class DDQN_Agent:
             if os.path.exists("last_episode.txt"):
                 open('saved_model_params.txt', 'w').close()
 
-        obs = self.env.reset()
+        obs, _ = self.env.reset()
         tensor = self.transformToTensor(obs)
         writer.add_graph(self.policy, tensor)
 
@@ -187,18 +189,18 @@ class DDQN_Agent:
 
         for e in range(1, self.max_episodes + 1):
             start = time.time()
-            state = self.env.reset()
+            state, _ = self.env.reset()
             steps = 0
             score = 0
             while True:
                 state = self.transformToTensor(state)
 
                 action = self.act(state)
-                next_state, reward, done = self.env.step(action)
+                next_state, reward, done, _ = self.env.step(action)
 
                 if steps == self.max_steps:
                     done = 1
-                    print("Max step size reached: ", steps)
+                    print("Episode is done: Max step size reached.")
 
                 self.memorize(state, action, reward, next_state)
                 self.learn()
@@ -208,6 +210,10 @@ class DDQN_Agent:
                 score += reward
                 if done:
                     print("----------------------------------------------------------------------------------------")
+                    if len(self.memory) < self.batch_size:
+                        print(self.batch_size, " steps needed to start the training, current steps: ", len(self.memory))
+                        break
+
                     print(
                         "episode:{0}, reward: {1}, mean reward: {2}, score: {3}, epsilon: {4}, total steps: {5}".format(
                             self.episode, reward, round(score / steps, 2), score, self.eps_threshold, self.steps_done))
@@ -237,8 +243,7 @@ class DDQN_Agent:
                     writer.add_scalar('score_history', score, self.episode)
                     writer.add_scalar('reward_history', reward, self.episode)
                     writer.add_scalar('Total steps', self.steps_done, self.episode)
-                    writer.add_scalars('General Look', {'epsilon_value': self.eps_threshold,
-                                                        'score_history': score,
+                    writer.add_scalars('General Look', {'score_history': score,
                                                         'reward_history': reward}, self.episode)
 
                     # save checkpoint
@@ -271,13 +276,16 @@ class DDQN_Agent:
         start = time.time()
         steps = 0
         score = 0
-        state = self.env.reset()
+        image_array = []
+        state, next_state_image = self.env.reset()
+        image_array.append(next_state_image)
 
         while True:
             state = self.transformToTensor(state)
 
             action = int(np.argmax(self.test_network(state).cpu().data.squeeze().numpy()))
-            next_state, reward, done = self.env.step(action)
+            next_state, reward, done, next_state_image = self.env.step(action)
+            image_array.append(next_state_image)
 
             if steps == self.max_steps:
                 done = 1
@@ -300,5 +308,15 @@ class DDQN_Agent:
                 end = time.time()
                 stopWatch = end - start
                 print("Test is done, test time: ", stopWatch)
+
+                # Convert images to video
+                frameSize = (256, 144)
+                import cv2
+                video = cv2.VideoWriter("videos\\test_video_episode_{}_score_{}.mp4".format(self.episode, score), 7, frameSize)
+
+                for img in image_array:
+                    video.write(img)
+
+                video.release()
 
                 break
