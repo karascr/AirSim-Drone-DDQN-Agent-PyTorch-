@@ -28,7 +28,6 @@ class DroneEnv(object):
 
         self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
         self.quad_offset = (0, 0, 0)
-        self.ep = 0
         self.useDepth = useDepth
 
     def step(self, action):

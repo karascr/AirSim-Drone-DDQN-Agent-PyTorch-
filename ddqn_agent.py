@@ -48,10 +48,10 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 256
+        self.batch_size = 512
         self.max_episodes = 10000
         self.save_interval = 10
-        self.test_interval = 1
+        self.test_interval = 10
         self.network_update_interval = 10
         self.episode = -1
         self.steps_done = 0
@@ -96,7 +96,6 @@ class DDQN_Agent:
             self.policy.load_state_dict(checkpoint['state_dict'])
             self.episode = checkpoint['episode']
             self.steps_done = checkpoint['steps_done']
-            self.optimizer.load_state_dict(checkpoint['optimizer'])
             self.updateNetworks()
             print("Saved parameters loaded"
                   "\nModel: ", file,
@@ -111,6 +110,8 @@ class DDQN_Agent:
             if os.path.exists("last_episode.txt"):
                 open('saved_model_params.txt', 'w').close()
 
+        
+        self.optimizer = optim.Adam(self.policy.parameters(), self.learning_rate)
         obs, _ = self.env.reset()
         tensor = self.transformToTensor(obs)
         writer.add_graph(self.policy, tensor)
@@ -184,6 +185,7 @@ class DDQN_Agent:
     def train(self):
         score_history = []
         reward_history = []
+
         if self.episode == -1:
             self.episode = 1
 
@@ -251,8 +253,7 @@ class DDQN_Agent:
                         checkpoint = {
                             'episode': self.episode,
                             'steps_done': self.steps_done,
-                            'state_dict': self.policy.state_dict(),
-                            'optimizer': self.optimizer.state_dict()
+                            'state_dict': self.policy.state_dict()
                         }
                         torch.save(checkpoint, self.save_dir + '//EPISODE{}.pt'.format(self.episode))
 
@@ -312,7 +313,7 @@ class DDQN_Agent:
                 # Convert images to video
                 frameSize = (256, 144)
                 import cv2
-                video = cv2.VideoWriter("videos\\test_video_episode_{}_score_{}.avi".format(self.episode, score), cv2.VideoWriter_fourcc(*'DIVX'), 7, frameSize)
+                video = cv2.VideoWriter("videos\\test_video_episode_{}_score_{}.avi".format(self.episode+1, score), cv2.VideoWriter_fourcc(*'DIVX'), 7, frameSize)
 
                 for img in image_array:
                     video.write(img)
