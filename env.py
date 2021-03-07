@@ -53,9 +53,8 @@ class DroneEnv(object):
         if quad_state.z_val < - 7.3:
             self.client.moveToPositionAsync(quad_state.x_val, quad_state.y_val, -7, 1).join()
 
-        result = self.compute_reward(quad_state, quad_vel, collision)
+        result, done = self.compute_reward(quad_state, quad_vel, collision)
         state, image = self.get_obs()
-        done = self.isDone(result)
 
         return state, result, done, image
 
@@ -110,7 +109,7 @@ class DroneEnv(object):
         reward = -1
 
         if collision:
-            reward = -100
+            reward = -50
         else:
             dist = self.get_distance(quad_state)
             diff = self.last_dist - dist
@@ -123,13 +122,6 @@ class DroneEnv(object):
 
             self.last_dist = dist
 
-        #print("reward: ", reward)
-
-        return reward
-
-
-    def isDone(self, reward):
-        """Check if episode is done"""
         done = 0
         if reward <= -10:
             done = 1
@@ -137,7 +129,9 @@ class DroneEnv(object):
         elif reward > 499:
             done = 1
             time.sleep(1)
-        return done
+
+        return reward, done
+
 
     def interpret_action(self, action):
         """Interprete action"""
