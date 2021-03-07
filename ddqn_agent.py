@@ -313,7 +313,7 @@ class DDQN_Agent:
                 # Convert images to video
                 frameSize = (256, 144)
                 import cv2
-                video = cv2.VideoWriter("videos\\test_video_episode_{}_score_{}.avi".format(self.episode+1, score), cv2.VideoWriter_fourcc(*'DIVX'), 7, frameSize)
+                video = cv2.VideoWriter("videos\\test_video_episode_{}_score_{}.avi".format(self.episode, score), cv2.VideoWriter_fourcc(*'DIVX'), 7, frameSize)
 
                 for img in image_array:
                     video.write(img)

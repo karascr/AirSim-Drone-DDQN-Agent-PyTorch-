@@ -111,14 +111,12 @@ class DroneEnv(object):
 
         if collision:
             reward = -100
-            print("Episode is done: Collided.")
         else:
             dist = self.get_distance(quad_state)
             diff = self.last_dist - dist
 
             if dist < 10:
                 reward = 500
-                print("Episode is done: Target reached.")
             else:
                 reward += diff
 
