@@ -177,7 +177,8 @@ class DDQN_Agent:
         max_next_q = next_q_values[[range(0, self.batch_size)], [actions]]
         expected_q = torch.FloatTensor(rewards + (self.gamma * max_next_q)).to(device)
 
-        loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
+        #loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
+        loss = F.smooth_l1_loss(current_q.squeeze(), expected_q.squeeze())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
