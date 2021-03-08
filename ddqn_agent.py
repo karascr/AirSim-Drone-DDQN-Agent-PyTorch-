@@ -49,8 +49,8 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 64
-        self.memory = Memory(1000)
+        self.batch_size = 256
+        self.memory = Memory(5000)
         self.max_episodes = 10000
         self.save_interval = 10
         self.test_interval = 10
@@ -316,7 +316,7 @@ class DDQN_Agent:
                     reward, score, self.steps_done))
 
                 with open('tests.txt', 'a') as file:
-                    file.write("TEST, reward: {}, score: {}, total steps: {}".format(
+                    file.write("TEST, reward: {}, score: {}, total steps: {}\n".format(
                         reward, score, self.steps_done))
 
                 writer.add_scalars('Test', {'score': score, 'reward': reward}, self.episode)
