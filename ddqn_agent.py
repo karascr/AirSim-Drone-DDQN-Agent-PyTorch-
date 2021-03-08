@@ -13,6 +13,7 @@ from setuptools import glob
 from env import DroneEnv
 from torch.utils.tensorboard import SummaryWriter
 import time
+from prioritized_memory import Memory
 
 writer = SummaryWriter()
 
@@ -48,7 +49,8 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 512
+        self.batch_size = 64
+        self.memory = Memory(1000)
         self.max_episodes = 10000
         self.save_interval = 10
         self.test_interval = 10
@@ -65,7 +67,6 @@ class DDQN_Agent:
         self.updateNetworks()
 
         self.env = DroneEnv(useDepth)
-        self.memory = deque(maxlen=10000)
         self.optimizer = optim.Adam(self.policy.parameters(), self.learning_rate)
 
         if torch.cuda.is_available():
@@ -102,6 +103,7 @@ class DDQN_Agent:
                   "\nSteps done: ", self.steps_done,
                   "\nEpisode: ", self.episode)
 
+
         else:
             if os.path.exists("log.txt"):
                 open('log.txt', 'w').close()
@@ -110,7 +112,6 @@ class DDQN_Agent:
             if os.path.exists("last_episode.txt"):
                 open('saved_model_params.txt', 'w').close()
 
-        
         self.optimizer = optim.Adam(self.policy.parameters(), self.learning_rate)
         obs, _ = self.env.reset()
         tensor = self.transformToTensor(obs)
@@ -150,22 +151,28 @@ class DDQN_Agent:
             action = random.randrange(0, 4)
         return int(action)
 
-    def memorize(self, state, action, reward, next_state):
-        self.memory.append(
-            (
-                state,
-                action,
-                reward,
-                self.transformToTensor(next_state),
-            )
-        )
+    def append_sample(self, state, action, reward, next_state):
+        next_state = self.transformToTensor(next_state)
+
+        current_q = self.policy(state).squeeze().cpu().detach().numpy()[action]
+        next_q = self.target(next_state).squeeze().cpu().detach().numpy()[action]
+        expected_q = reward + (self.gamma * next_q)
+
+        error = abs(current_q - expected_q),
+
+        self.memory.add(error, (state, action, reward, next_state))
 
     def learn(self):
-        if len(self.memory) < self.batch_size:
+        if self.memory.tree.n_entries < self.batch_size:
             return
 
-        batch = random.sample(self.memory, self.batch_size)
-        states, actions, rewards, next_states = zip(*batch)
+        batch, idxs, is_weights = self.memory.sample(self.batch_size)
+        batch = np.array(batch).transpose()
+
+        states = tuple(batch[0])
+        actions = list(batch[1])
+        rewards = list(batch[2])
+        next_states = tuple(batch[3])
 
         states = torch.cat(states)
         actions = np.asarray(actions)
@@ -173,17 +180,24 @@ class DDQN_Agent:
         next_states = torch.cat(next_states)
 
         current_q = self.policy(states)[[range(0, self.batch_size)], [actions]]
-        next_q_values = self.target(next_states).cpu().detach().numpy()
-        max_next_q = next_q_values[[range(0, self.batch_size)], [actions]]
-        expected_q = torch.FloatTensor(rewards + (self.gamma * max_next_q)).to(device)
+        next_q =self.target(next_states).cpu().detach().numpy()[[range(0, self.batch_size)], [actions]]
+        expected_q = torch.FloatTensor(rewards + (self.gamma * next_q)).to(device)
 
-        #loss = F.mse_loss(current_q.squeeze(), expected_q.squeeze())
+        errors = torch.abs(current_q.squeeze() - expected_q.squeeze()).cpu().detach().numpy()
+
+        # update priority
+        for i in range(self.batch_size):
+            idx = idxs[i]
+            self.memory.update(idx, errors[i])
+
         loss = F.smooth_l1_loss(current_q.squeeze(), expected_q.squeeze())
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
     def train(self):
+        print("Starting...")
+
         score_history = []
         reward_history = []
 
@@ -203,9 +217,9 @@ class DDQN_Agent:
 
                 if steps == self.max_steps:
                     done = 1
-                    print("Episode is done: Max step size reached.")
 
-                self.memorize(state, action, reward, next_state)
+                #self.memorize(state, action, reward, next_state)
+                self.append_sample(state, action, reward, next_state)
                 self.learn()
 
                 state = next_state
@@ -213,8 +227,8 @@ class DDQN_Agent:
                 score += reward
                 if done:
                     print("----------------------------------------------------------------------------------------")
-                    if len(self.memory) < self.batch_size:
-                        print(self.batch_size, " steps needed to start the training, current steps: ", len(self.memory))
+                    if self.memory.tree.n_entries < self.batch_size:
+                        print("Training will start after ", self.batch_size - self.memory.tree.n_entries, " steps.")
                         break
 
                     print(

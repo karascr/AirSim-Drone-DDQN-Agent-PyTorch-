@@ -25,7 +25,6 @@ class DroneEnv(object):
 
     def __init__(self, useDepth=False):
         self.client = airsim.MultirotorClient()
-
         self.last_dist = self.get_distance(self.client.getMultirotorState().kinematics_estimated.position)
         self.quad_offset = (0, 0, 0)
         self.useDepth = useDepth
