@@ -49,7 +49,7 @@ class DDQN_Agent:
         self.eps_decay = 30000
         self.gamma = 0.8
         self.learning_rate = 0.001
-        self.batch_size = 256
+        self.batch_size = 4
         self.memory = Memory(5000)
         self.max_episodes = 10000
         self.save_interval = 10
@@ -160,19 +160,16 @@ class DDQN_Agent:
 
         error = abs(current_q - expected_q),
 
-        self.memory.add(error, (state, action, reward, next_state))
+        self.memory.add(error, state, action, reward, next_state)
 
     def learn(self):
         if self.memory.tree.n_entries < self.batch_size:
             return
 
-        batch, idxs, is_weights = self.memory.sample(self.batch_size)
-        batch = np.array(batch).transpose()
+        states, actions, rewards, next_states, idxs, is_weights = self.memory.sample(self.batch_size)
 
-        states = tuple(batch[0])
-        actions = list(batch[1])
-        rewards = list(batch[2])
-        next_states = tuple(batch[3])
+        states = tuple(states)
+        next_states = tuple(next_states)
 
         states = torch.cat(states)
         actions = np.asarray(actions)
