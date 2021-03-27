@@ -15,15 +15,17 @@ class Memory:  # stored as ( s, a, r, s_ ) in SumTree
     def _get_priority(self, error):
         return (np.abs(error) + self.e) ** self.a
 
-    def add(self, error, state, action, reward, next_state):
+    def add(self, error, state, action, reward, next_state, quad_vel ,next_quad_vel):
         p = self._get_priority(error)
-        self.tree.add(p, state, action, reward, next_state)
+        self.tree.add(p, state, action, reward, next_state, quad_vel ,next_quad_vel)
 
     def sample(self, n):
         states = []
         actions = []
         rewards = []
         next_states = []
+        quad_vels = []
+        next_quad_vels = []
         idxs = []
         segment = self.tree.total() / n
         priorities = []
@@ -35,19 +37,21 @@ class Memory:  # stored as ( s, a, r, s_ ) in SumTree
             b = segment * (i + 1)
 
             s = random.uniform(a, b)
-            (idx, p, state, action, reward, next_state) = self.tree.get(s)
+            (idx, p, state, action, reward, next_state, quad_vel ,next_quad_vel) = self.tree.get(s)
             priorities.append(p)
             states.append(state)
             actions.append(action)
             rewards.append(reward)
             next_states.append(next_state)
+            quad_vels.append(quad_vel)
+            next_quad_vels.append(next_quad_vel)
             idxs.append(idx)
 
         sampling_probabilities = priorities / self.tree.total()
         is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
         is_weight /= is_weight.max()
 
-        return states, actions, rewards, next_states, idxs, is_weight
+        return states, actions, rewards, next_states, quad_vels ,next_quad_vels, idxs, is_weight
 
     def update(self, idx, error):
         p = self._get_priority(error)

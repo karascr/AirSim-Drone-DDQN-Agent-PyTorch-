@@ -1,4 +1,4 @@
-from agent import Agent as DQN_Agent
+from agent import DQN_Agent
 from ddqn_agent import DDQN_Agent
 
 if __name__ == "__main__":

@@ -105,6 +105,7 @@ class DroneEnv(object):
 
         if collision:
             reward = -120
+
         elif quad_state.z_val < -22 or quad_state.z_val > -1:
                 reward = -120
         else:

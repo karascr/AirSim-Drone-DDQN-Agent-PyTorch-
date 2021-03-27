@@ -13,6 +13,8 @@ class SumTree:
         self.actions = numpy.zeros(capacity, dtype=object)
         self.rewards = numpy.zeros(capacity, dtype=object)
         self.next_states = numpy.zeros(capacity, dtype=object)
+        self.quad_vels = numpy.zeros(capacity, dtype=object)
+        self.next_quad_vels = numpy.zeros(capacity, dtype=object)
         self.n_entries = 0
 
     # update to the root node
@@ -41,13 +43,15 @@ class SumTree:
         return self.tree[0]
 
     # store priority and sample
-    def add(self, p, state, action, reward, next_state):
+    def add(self, p, state, action, reward, next_state, quad_vel ,next_quad_vel):
         idx = self.write + self.capacity - 1
 
         self.states[self.write] = state
         self.actions[self.write] = action
         self.rewards[self.write] = reward
         self.next_states[self.write] = next_state
+        self.quad_vels[self.write] = quad_vel
+        self.next_quad_vels[self.write] = next_quad_vel
         self.update(idx, p)
 
         self.write += 1
@@ -69,4 +73,10 @@ class SumTree:
         idx = self._retrieve(0, s)
         dataIdx = idx - self.capacity + 1
 
-        return (idx, self.tree[idx], self.states[dataIdx], self.actions[dataIdx], self.rewards[dataIdx], self.next_states[dataIdx])
+        return (idx, self.tree[idx],
+                self.states[dataIdx],
+                self.actions[dataIdx],
+                self.rewards[dataIdx],
+                self.next_states[dataIdx],
+                self.quad_vels[dataIdx],
+                self.next_quad_vels[dataIdx])
